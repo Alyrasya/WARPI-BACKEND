@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { Order } from '#/order/entities/order.entity';
@@ -18,81 +18,81 @@ export class OrderService {
     ) {}
 
     async createOrder(createOrderDto: CreateOrderDto): Promise<Transaction> {
-        const { products, orderers_name } = createOrderDto;
-
-        // 1. Dapatkan tanggal awal dan akhir untuk hari ini
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0); // Mulai hari ini pukul 00:00
-        const todayEnd = new Date();
-        todayEnd.setHours(23, 59, 59, 999); // Akhir hari ini pukul 23:59
-
-        // 2. Hitung jumlah transaksi hari ini
-        const countTransactionsToday = await this.transactionRepository.count({
-            where: {
-                createdAt: Between(todayStart, todayEnd),
-            },
-        });
-
-        // 3. Set no_order menjadi jumlah transaksi hari ini + 1
-        const no_order = countTransactionsToday + 1;
-
-        let total_price_transaction = 0;
-
-        // 4. Buat transaksi baru dengan orderers_name dan no_order
-        const newTransaction = this.transactionRepository.create({
-            orderers_name,
-            no_order,
-            total_price_transaction: 0, // Untuk sementara 0, akan dihitung nanti
-            payment_status: 'unpaid',   // Status default bisa diatur
-            createdAt: new Date(),     // Set created_at ke waktu saat ini
-        });
-        const savedTransaction = await this.transactionRepository.save(newTransaction);
-
-        // 5. Iterasi produk yang dibeli dan buat order
-        for (const productOrder of products) {
-            const { product_id } = productOrder;
-
-            // Cek apakah produk ada di database
-            const product = await this.productRepository.findOne({ where: { id: product_id } });
-            if (!product) {
-                throw new BadRequestException(`Product with ID ${product_id} not found`);
-            }
-
-            // Cek apakah stok cukup
-            const qty = 1;  // Set kuantitas default menjadi 1
-            if (product.stock < qty) {
-                throw new BadRequestException(`Insufficient stock for product ID ${product_id}`);
-            }
-
-            // Hitung total harga per produk
-            const total_price_order = product.price * qty;
-
-            // Tambahkan total_price_order ke total transaksi
-            total_price_transaction += total_price_order;
-
-            // Kurangi stok produk
-            product.stock -= qty;
-            await this.productRepository.save(product);
-
-            // Buat order baru
-            const newOrder = this.orderRepository.create({
-                product_id,
-                transaction_id: savedTransaction.id,  // Assign ID transaksi
-                qty, // Set qty default 1
-                total_price_order,
-            });
-
-            // Simpan order ke database
-            await this.orderRepository.save(newOrder);
-        }
-
-        // 6. Update total_price_transaction setelah semua order selesai
-        savedTransaction.total_price_transaction = total_price_transaction;
-        await this.transactionRepository.save(savedTransaction);
-
-        // 7. Kembalikan transaksi yang telah dibuat
-        return savedTransaction;
-    }
+      const { products, orderers_name } = createOrderDto;
+  
+      // 1. Dapatkan tanggal awal dan akhir untuk hari ini
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+  
+      // 2. Hitung jumlah transaksi hari ini
+      const countTransactionsToday = await this.transactionRepository.count({
+          where: {
+              createdAt: Between(todayStart, todayEnd),
+          },
+      });
+  
+      // 3. Set no_order menjadi jumlah transaksi hari ini + 1
+      const no_order = countTransactionsToday + 1;
+  
+      let total_price_transaction = 0;
+  
+      // 4. Buat transaksi baru
+      const newTransaction = this.transactionRepository.create({
+          orderers_name,
+          no_order,
+          total_price_transaction: 0, // Untuk sementara 0
+          payment_status: 'unpaid',   // Status default bisa diatur
+          createdAt: new Date(),
+      });
+      const savedTransaction = await this.transactionRepository.save(newTransaction);
+  
+      // 5. Iterasi produk yang dibeli dan buat order
+      for (const productOrder of products) {
+          const { product_id, qty } = productOrder; // Ambil qty dari DTO
+  
+          // Cek apakah produk ada di database
+          const product = await this.productRepository.findOne({ where: { id: product_id } });
+          if (!product) {
+              throw new BadRequestException(`Product with ID ${product_id} not found`);
+          }
+  
+          // Cek apakah stok cukup
+          if (product.stock < qty) {
+              throw new BadRequestException(`Insufficient stock for product ID ${product_id}`);
+          }
+  
+          // Hitung total harga per produk
+          const total_price_order = product.price * qty;
+  
+          // Tambahkan total_price_order ke total transaksi
+          total_price_transaction += total_price_order;
+  
+          // Kurangi stok produk
+          product.stock -= qty;
+          await this.productRepository.save(product);
+  
+          // Buat order baru
+          const newOrder = this.orderRepository.create({
+              product_id,
+              transaction_id: savedTransaction.id,  // Assign ID transaksi
+              qty, // Set sesuai qty yang diinput
+              total_price_order,
+          });
+  
+          // Simpan order ke database
+          await this.orderRepository.save(newOrder);
+      }
+  
+      // 6. Update total_price_transaction setelah semua order selesai
+      savedTransaction.total_price_transaction = total_price_transaction;
+      await this.transactionRepository.save(savedTransaction);
+  
+      // 7. Kembalikan transaksi yang telah dibuat
+      return savedTransaction;
+  }
+  
 
     async editOrder(orderId: string, actionOrQty?: 'increment' | 'decrement' | number): Promise<string> {
       try {
@@ -239,5 +239,14 @@ export class OrderService {
         total_price_order: order.total_price_order,
         transaction_id: order.transaction_id, // Menyertakan transaction_id
       }));
+    }
+
+    async getByIdCategory(id: string): Promise<Order> {
+      const orders = await this.orderRepository.findOneBy({ id });
+  
+      if (!orders) {
+        throw new NotFoundException('Order not found'); // Ganti dengan exception handling yang sesuai
+      }
+      return orders;
     }
 }

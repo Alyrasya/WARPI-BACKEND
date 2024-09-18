@@ -13,7 +13,7 @@ export class OrderController {
         return await this.orderService.createOrder(createOrderDto);
     }
 
-    @Put('edit/:orderId')
+  @Put('edit/:orderId')
     async editOrder(
       @Param('orderId') orderId: string,
       @Body() editOrderDto: UpdateOrderDto
@@ -32,8 +32,7 @@ export class OrderController {
           throw new BadRequestException('An unexpected error occurred.');
         }
       }
-    }
-    
+    }  
 
   // Endpoint untuk menghapus pesanan (Delete Order)
   @Delete('delete/:orderId')

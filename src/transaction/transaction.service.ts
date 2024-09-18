@@ -1,34 +1,47 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository} from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
+import { Order } from '#/order/entities/order.entity';
 
 @Injectable()
 export class TransactionService {
   constructor(
     @InjectRepository(Transaction)
     private readonly transactionRepository: Repository<Transaction>,
-) {}
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+  ) {}
 
-  create(createTransactionDto: CreateTransactionDto) {
-    return 'This action adds a new transaction';
-  }
+  async getTransactionById(transactionId: string): Promise<any> {
+    // Ambil transaksi beserta order dan produk terkait
+    const transaction = await this.transactionRepository.findOne({
+      where: { id: transactionId },
+      relations: ['orders', 'orders.product'], // Mengambil relasi order dan produk
+    });
 
-  findAll() {
-    return `This action returns all transaction`;
-  }
+    if (!transaction) {
+      throw new NotFoundException(`Transaction with ID ${transactionId} not found`);
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} transaction`;
-  }
+    const orders = transaction.orders.map(order => ({
+      orderId: order.id,
+      productName: order.product.product_name,
+      quantity: order.qty,
+      price: order.product.price, // Mengakses harga dari produk
+      totalPriceOrder: order.qty * order.product.price,
+    }));
 
-  update(id: number, updateTransactionDto: UpdateTransactionDto) {
-    return `This action updates a #${id} transaction`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} transaction`;
+    return {
+      transactionId: transaction.id,
+      orderName: transaction.orderers_name,
+      noOrder: transaction.no_order,
+      totalPriceTransaction: transaction.total_price_transaction,
+      status: transaction.payment_status,
+      createAt: transaction.createdAt,
+      orders,
+    };
   }
 }

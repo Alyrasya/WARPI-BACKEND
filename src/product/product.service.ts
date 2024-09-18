@@ -46,7 +46,8 @@ export class ProductService {
       });
   
       // Simpan produk dan tunggu hingga selesai
-      return await this.productRepository.save(newProduct);
+      const savedProduct = await this.productRepository.save(newProduct);
+      return savedProduct;
     } catch (error) {
       // Tangani kesalahan yang tidak terduga
       console.error('Error occurred while saving the product:', error);

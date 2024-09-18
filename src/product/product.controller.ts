@@ -36,6 +36,11 @@ export class ProductController {
     @Body() createProductDto: CreateProductDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
+
+    // Log data yang diterima
+    console.log('DTO:', createProductDto);
+    console.log('Uploaded file:', file);
+
     try {
       if (file) {
         createProductDto.product_photo = file.filename;
@@ -43,6 +48,7 @@ export class ProductController {
       return await this.productService.createProduct(createProductDto);
     } catch (error) {
       // Tangani error di sini
+      console.error('Error creating product:', error.message);
       throw new Error(`Error creating product: ${error.message}`);
     }
   }
