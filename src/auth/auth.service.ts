@@ -42,6 +42,7 @@ export class AuthService {
 
     return {
       access_token: token,
+      role: user.role,
       requiresPasswordChange: false,
     };
   }

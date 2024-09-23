@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository} from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
 import { Order } from '#/order/entities/order.entity';
+import { Product } from '#/product/entities/product.entity';
 
 @Injectable()
 export class TransactionService {
@@ -31,7 +32,7 @@ export class TransactionService {
       productName: order.product.product_name,
       quantity: order.qty,
       price: order.product.price, // Mengakses harga dari produk
-      totalPriceOrder: order.qty * order.product.price,
+      photo: order.product.product_photo,
     }));
 
     return {
