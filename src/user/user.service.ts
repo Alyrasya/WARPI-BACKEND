@@ -219,4 +219,19 @@ export class UserService {
       relations: ['role'], // Termasuk relasi dengan tabel role
     });
   }
+
+    // Fungsi untuk mencari kategori berdasarkan nama
+    async filterByName(email: string): Promise<User[]> {
+      // Query builder untuk pencarian case-insensitive menggunakan ILIKE
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.email ILIKE :email', { email: `%${email}%` })
+        .getMany();
+  
+      // Jika tidak ada kategori yang ditemukan, lempar NotFoundException
+      if (users.length === 0) {
+        throw new NotFoundException('No category found with the given name');
+      }
+      return users;
+    }
 }

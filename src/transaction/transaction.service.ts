@@ -45,4 +45,11 @@ export class TransactionService {
       orders,
     };
   }
+
+  async countPaidTransactions(): Promise<number> {
+    return await this.transactionRepository.count({
+      where: { payment_status: 'paid' }, // Filter for transactions with status 'paid'
+    });
+  }
+  
 }

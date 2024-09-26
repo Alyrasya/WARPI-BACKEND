@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Put, Param, ParseUUIDPipe, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, ParseUUIDPipe, UseGuards, Req, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { CreateCashierDto } from './dto/create-cashier.dto';
@@ -54,5 +54,10 @@ export class UserController {
   @Put(':id/reset-password')
   async resetPassword(@Param('id') id: string): Promise<string> {
     return await this.userService.resetPassword(id);
+  }
+
+  @Get('filter/user')
+  async filterByEmail(@Query('email') email: string) {
+    return this.userService.filterByName(email);
   }
 }
