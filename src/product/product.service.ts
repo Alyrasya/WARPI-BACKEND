@@ -56,10 +56,8 @@ export class ProductService {
   }
 
   async updateProduct(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
-    const product = await this.productRepository.preload({
-      id,
-      ...updateProductDto,
-    });
+
+    const product = await this.getByIdProduct(id);
 
     // Jika produk tidak ditemukan, lempar NotFoundException
     if (!product) {
@@ -111,45 +109,69 @@ export class ProductService {
     return this.productRepository.save(product);
   }
 
-  async getAllProduct(): Promise<{ product: Product[], total: number }> {
-    const [product, total] = await this.productRepository
-    .createQueryBuilder('product')
-    .getManyAndCount();
-    return { product, total }; 
-  }
+  // Digunakan untuk melihat detail product
+  async getByIdProduct(id: string): Promise<any> {
+    const product = await this.productRepository
+      .createQueryBuilder('product')
+      .select([
+        'product.product_name',
+        'product.description',
+        'product.price',
+        'product.category_name',
+        'product.status_product',
+        'product.product_photo',
+        'product.stock',
+      ])
+      .where('product.id = :id', { id }) // Tambahkan kondisi untuk mencari berdasarkan id
+      .getOne();
 
-  //Digunakan untuk melihat detail product
-  async getByIdProduct(id: string): Promise<Product> {
-    const product = await this.productRepository.findOne({
-      where:{id},
-      // relations:{category:true}
-    });
     if (!product) {
       throw new NotFoundException('Product not found');
     }
+
     return product;
   }
-
-  async filterByName(product_name: string): Promise<Product[]> {
-    // Validasi input untuk memastikan product_name disediakan dan tidak kosong
-    if (!product_name || product_name.trim().length === 0) {
-      throw new BadRequestException('Product name must be provided');
-    }
-
-    // Query builder untuk pencarian case-insensitive menggunakan ILIKE
-    const products = await this.productRepository
+  
+  async getAllProduct(product_name?: string, category_name?: string): Promise<any[]> {
+    const query = this.productRepository
       .createQueryBuilder('product')
-      .where('product.product_name ILIKE :name', { name: `%${product_name}%` })
-      .getMany();
-
-    // Jika tidak ada produk yang ditemukan, lempar NotFoundException
-    if (products.length === 0) {
-      throw new NotFoundException('No product found with the given name');
+      .select([
+        'product.id',
+        'product.product_name',
+        'product.description',
+        'product.price',
+        'product.category_name',
+        'product.status_product',
+        'product.product_photo',
+        'product.stock',
+      ]);
+  
+    // Jika ada parameter category_name, tambahkan kondisi WHERE untuk filter kategori
+    if (category_name && category_name.toLowerCase() !== 'all') {
+      query.where('product.category_name = :category_name', { category_name });
     }
-
+  
+    // Jika ada parameter product_name, tambahkan kondisi ILIKE untuk pencarian
+    if (product_name) {
+      if (category_name && category_name.toLowerCase() !== 'all') {
+        const productInCategory = await query
+          .andWhere('product.product_name ILIKE :product_name', { product_name: `%${product_name}%` })
+          .getMany();
+  
+        if (productInCategory.length === 0) {
+          throw new Error(`Product with name "${product_name}" not found in the "${category_name}" category.`);
+        }
+  
+        return productInCategory;
+      } else {
+        query.andWhere('product.product_name ILIKE :product_name', { product_name: `%${product_name}%` });
+      }
+    }
+  
+    const products = await query.getMany();
     return products;
-  }
-
+  }  
+  
   async countProducts(): Promise<number> {
     return await this.productRepository.count();
   }

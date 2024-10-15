@@ -7,7 +7,7 @@ export class PaymentMethodController {
   constructor(private readonly paymentMethodService: PaymentMethodService) {}
 
   // Endpoint untuk menampilkan seluruh metode pembayaran
-  @Get()
+  @Get('getAll')
   async getAllMethods(): Promise<PaymentMethod[]> {
     try {
       return await this.paymentMethodService.getAllMethods();
@@ -20,7 +20,7 @@ export class PaymentMethodController {
   }
 
   // Endpoint untuk menampilkan metode pembayaran berdasarkan id
-  @Get(':id')
+  @Get(':id/getById')
   async getMethodById(@Param('id') id: string): Promise<PaymentMethod> {
     try {
       return await this.paymentMethodService.getMethodById(id);

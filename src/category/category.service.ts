@@ -83,54 +83,79 @@ export class CategoryService {
       }
   }
 
-  // Fungsi untuk mendapatkan semua kategori
-  async getAllCategory(): Promise<{ category: Category[], total: number }> {
-    const [category, total] = await this.categoryRepository
-    .createQueryBuilder('category')
-    .getManyAndCount();
-    return { category, total };
-  }
-
-  // Fungsi untuk mencari kategori berdasarkan nama
-  async filterByName(category_name: string): Promise<Category[]> {
-    // Query builder untuk pencarian case-insensitive menggunakan ILIKE
-    const categories = await this.categoryRepository
-      .createQueryBuilder('category')
-      .where('category.category_name ILIKE :category_name', { category_name: `%${category_name}%` })
-      .getMany();
-
-    // Jika tidak ada kategori yang ditemukan, lempar NotFoundException
-    if (categories.length === 0) {
-      throw new NotFoundException('No category found with the given name');
-    }
-    return categories;
-  }
-  
   // Fungsi untuk mendapatkan kategori berdasarkan ID
   async getByIdCategory(id: string): Promise<Category> {
     const category = await this.categoryRepository.findOneBy({ id });
-
+  
     if (!category) {
       throw new NotFoundException('Category not found'); // Ganti dengan exception handling yang sesuai
     }
     return category;
   }
 
-  // Fungsi untuk menampilkan data product berdasarkan id category yang dipilih
-  async detailCategory(id: string): Promise<Product[]> {
+  async getAllCategory(page: number, page_size: number, category_name?: string) { 
+    const query = this.categoryRepository
+      .createQueryBuilder('category')  // Membuat query untuk tabel 'category'
+      .select([
+        'category.id',  // Memilih kolom 'id'
+        'category.category_name',  // Memilih kolom 'category_name'
+        'category.status_category',  // Memilih kolom 'status_category'
+      ]);
+  
+    if (category_name) {  // Jika ada parameter 'category_name'
+      query.where('category.category_name ILIKE :category_name', { category_name: `%${category_name}%` });
+      // Menambahkan filter 'category_name' untuk pencarian yang tidak case-sensitive
+    }
+  
+    // Paginasi: Skip dan Take
+    query.skip((page - 1) * page_size).take(page_size);
+    // Melewatkan (skip) beberapa record berdasarkan nomor halaman dan ukuran halaman
+    // Mengambil (take) sejumlah record sesuai dengan ukuran halaman
+  
+    const [categories, totalCount] = await query.getManyAndCount();  // Menjalankan query dan mengambil hasilnya
+    return { data: categories, totalCount };  // Mengembalikan hasil sebagai objek
+  }
+    
+  
+  async detailCategory(id: string, product_name?: string): Promise<Product[]> {
     // Temukan kategori berdasarkan ID dan sertakan relasi produk
     const category = await this.categoryRepository.findOne({
       where: { id },
       relations: ['product'], // Memuat produk yang terkait dengan kategori
     });
-
+  
     // Jika kategori tidak ditemukan, lempar NotFoundException
     if (!category) {
       throw new NotFoundException('Category not found');
     }
-
+  
+    // Buat query builder untuk mengambil produk
+    const query = this.productRepository
+      .createQueryBuilder('product')
+      .select([
+        'product.product_name',
+        'category.category_name',
+        'product.stock',
+        'product.price',
+        'product.product_photo',
+      ])
+      .innerJoin('product.category', 'category')
+      .where('category.id = :id', { id });
+  
+    // Jika ada parameter product_name, tambahkan kondisi ILIKE untuk pencarian
+    if (product_name) {
+      query.andWhere('product.product_name ILIKE :product_name', { product_name: `%${product_name}%` });
+    }
+  
+    const products = await query.getMany();
+  
+    // Jika tidak ada produk yang ditemukan, lemparkan pesan kesalahan
+    if (products.length === 0 && product_name) {
+      throw new NotFoundException('Product not found in this category');
+    }
+  
     // Kembalikan produk yang terkait dengan kategori
-    return category.product;
+    return products;
   }
 
   async countCategories(): Promise<number> {

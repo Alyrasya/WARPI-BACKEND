@@ -1,54 +1,68 @@
-import { Controller, Get, Post, Body, Put, Param, Query, ParseUUIDPipe, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Query, ParseUUIDPipe, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Product } from '#/product/entities/product.entity';
-import { Category } from './entities/category.entity';
 
 @Controller('category')
 export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+  constructor(
+    private readonly categoryService: CategoryService,
+  ) {}
 
-  @Post('createCategory')
+  @Post('create')
   async createCategory(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoryService.createCategory(createCategoryDto);
   }
 
-  @Put(':id')
+  @Put(':id/edit')
   async updateCategory(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', new ParseUUIDPipe) id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
   ) {
     return this.categoryService.updateCategory(id, updateCategoryDto);
   }
 
-  @Get()
-  async getAllCategory() {
-    return this.categoryService.getAllCategory();
+  @Get('getAll')
+  async getAllCategories(
+    @Query('page') page: number,
+    @Query('page_size') page_size: number,
+    @Query('category_name') category_name?: string
+  ) {
+    // Validasi sederhana untuk memastikan 'page' dan 'page_size' adalah angka yang valid
+    if (!page || !page_size || page <= 0 || page_size <= 0) {
+      throw new BadRequestException('Page and page_size must be positive numbers');
+    }
+
+    // Panggil service untuk mendapatkan data kategori dengan paginasi
+    const { data, totalCount } = await this.categoryService.getAllCategory(
+      page,
+      page_size,
+      category_name
+    );
+
+    return {
+      data, // Mengembalikan data kategori
+      totalCount, // Mengembalikan total count kategori
+    };
   }
 
-  @Get('filter/category')
-  async filterByName(@Query('category_name') category_name: string) {
-    return this.categoryService.filterByName(category_name);
-  }
-
-  @Get(':id')
-  async getByIdCategory(@Param('id', ParseUUIDPipe) id: string) {
-    return this.categoryService.getByIdCategory(id);
-  }
-
-  @Get(':id/product')
-  async getProductsByCategory(@Param('id', ParseUUIDPipe) id: string): Promise<Product[]> {
+  @Get(':id/detail')
+  async getProductsByCategory(
+    @Param('id') id: string,
+    @Query('product_name') product_name?: string, // Query optional untuk pencarian product_name
+  ): Promise<Product[]> {
     try {
-      // Memanggil metode service untuk mendapatkan produk berdasarkan ID kategori
-      return await this.categoryService.detailCategory(id);
+      // Memanggil service detailCategory untuk mendapatkan produk berdasarkan id kategori dan pencarian produk
+      const products = await this.categoryService.detailCategory(id, product_name);
+      return products;
     } catch (error) {
-      // Menangani kesalahan jika kategori tidak ditemukan
+      // Jika ada error, lemparkan NotFoundException jika sesuai
       if (error instanceof NotFoundException) {
         throw error;
       }
-      // Menangani kesalahan lain jika ada
-      throw new Error('An unexpected error occurred');
+      // Jika error lain, lempar pesan default
+      throw new Error('Error while retrieving products');
     }
   }
 }

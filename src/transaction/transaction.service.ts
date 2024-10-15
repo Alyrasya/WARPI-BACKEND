@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -51,5 +51,42 @@ export class TransactionService {
       where: { payment_status: 'paid' }, // Filter for transactions with status 'paid'
     });
   }
-  
+
+  async countTotalMonthlyIncome(): Promise<number> {
+    try {
+      // Mendapatkan bulan dan tahun saat ini
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1; // Bulan dimulai dari 0, jadi perlu +1
+      const currentYear = currentDate.getFullYear();
+
+      // Mendapatkan total dari transaksi yang berstatus "paid" untuk bulan dan tahun saat ini
+      const result = await this.transactionRepository
+        .createQueryBuilder('transaction')
+        .select('SUM(transaction.total_price_transaction)', 'total')
+        .where('transaction.payment_status = :status', { status: 'paid' })
+        .andWhere('EXTRACT(MONTH FROM transaction.created_at) = :month', { month: currentMonth })
+        .andWhere('EXTRACT(YEAR FROM transaction.created_at) = :year', { year: currentYear })
+        .getRawOne();
+
+      // Jika tidak ada transaksi, atau jika totalnya null, kembalikan 0
+      return result?.total ? parseFloat(result.total) : 0;
+    } catch (error) {
+      throw new BadRequestException('Error calculating monthly income');
+    }
+  }
+
+  async countTotalAllIncome(): Promise<number> {
+    try {
+      const result = await this.transactionRepository
+        .createQueryBuilder('transaction')
+        .select('SUM(transaction.total_price_transaction)', 'total')
+        .where('transaction.payment_status = :status', { status: 'paid' }) // Parameter fixed
+        .getRawOne();
+
+      // Jika tidak ada transaksi, atau totalnya null, kembalikan 0
+      return result?.total ? parseFloat(result.total) : 0;
+    } catch (error) {
+      throw new BadRequestException('Error calculating total income');
+    }
+  }
 }

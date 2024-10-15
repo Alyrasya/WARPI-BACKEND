@@ -37,12 +37,11 @@ export class AuthService {
     }
 
     // Jika semua validasi lolos, buat JWT token
-    const payload = { sub: user.id, role: user.role.role_name };
+    const payload = { id: user.id, role: user.role.role_name, username: user.username };
     const token = this.jwtService.sign(payload);
 
     return {
       access_token: token,
-      role: user.role,
       requiresPasswordChange: false,
     };
   }

@@ -7,12 +7,12 @@ export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
    // Endpoint untuk mendapatkan semua role
-   @Get()
+   @Get('getAll')
    async getAllRole(): Promise<Role[]> {
      return this.roleService.getAllRole();
    }
 
-   @Get(':id')
+   @Get(':id/getById')
     async getRoleById(@Param('id', ParseUUIDPipe) id: string): Promise<Role> {
       try {
         const role = await this.roleService.getRoleById(id);

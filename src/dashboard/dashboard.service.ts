@@ -9,6 +9,8 @@ export interface AdminSummary{
   totalProduct:number;
   totalCashier: number;
   totalTransaction: number;
+  totalMonthlyIncome: number;
+  totalAllIncome: number;
 }
 
 @Injectable()
@@ -25,11 +27,15 @@ export class DashboardService {
     const totalProduct = await this.productService.countProducts();
     const totalCashier = await this.userService.countCashiers();
     const totalTransaction = await this.transactionService.countPaidTransactions()
+    const totalMonthlyIncome = await this.transactionService.countTotalMonthlyIncome()
+    const totalAllIncome = await this.transactionService.countTotalAllIncome()
     return {
       totalCategory,
       totalProduct,
       totalCashier,
       totalTransaction,
+      totalMonthlyIncome,
+      totalAllIncome,
     };
   }
 }

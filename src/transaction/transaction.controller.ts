@@ -6,12 +6,12 @@ export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
   // Endpoint untuk mendapatkan detail transaksi berdasarkan ID transaksi
-  @Get(':transactionId')
-  async getTransactionById(@Param('transactionId') transactionId: string) {
-    const transaction = await this.transactionService.getTransactionById(transactionId);
+  @Get(':id/getById')
+  async getTransactionById(@Param('id') id: string) {
+    const transaction = await this.transactionService.getTransactionById(id);
     
     if (!transaction) {
-      throw new NotFoundException(`Transaction with ID ${transactionId} not found`);
+      throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
 
     return transaction;

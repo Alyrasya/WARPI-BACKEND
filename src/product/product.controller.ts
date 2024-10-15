@@ -12,7 +12,7 @@ import { Product } from './entities/product.entity';
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
   
-  @Post()
+  @Post('create')
   @UseInterceptors(FileInterceptor('product_photo', {
     storage: diskStorage({
       destination: './src/product/photo_product', // Ganti dengan direktori upload Anda
@@ -53,7 +53,7 @@ export class ProductController {
     }
   }
 
-  @Put(':id')
+  @Put(':id/edit')
   @UseInterceptors(FileInterceptor('product_photo', {
     storage: diskStorage({
       destination: './src/product/photo_product',
@@ -106,16 +106,22 @@ export class ProductController {
     }
   }
 
-  @Get()
-  async getAllProduct() {
+  @Get('getAll')
+  async getAllProducts(
+    @Query('product_name') product_name?: string,
+    @Query('category_name') category_name?: string
+  ): Promise<any[]> {
     try {
-      return await this.productService.getAllProduct();
+      // Call the service function to fetch the products
+      const products = await this.productService.getAllProduct(product_name, category_name);
+      return products;
     } catch (error) {
-      throw new HttpException(`Error retrieving products: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      // Throw a BadRequestException if any error occurs
+      throw new BadRequestException(error.message);
     }
   }
   
-  @Get('/:id')
+  @Get('/:id/getById')
   async getByIdProduct(@Param('id', ParseUUIDPipe) id: string) {
     try {
       const product = await this.productService.getByIdProduct(id);
@@ -125,28 +131,6 @@ export class ProductController {
       return product;
     } catch (error) {
       throw new HttpException(`Error retrieving product: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  @Get('filter/product')
-  async filterByName(@Query('product_name') product_name: string): Promise<Product[]> {
-    try {
-      // Pastikan nama produk tidak kosong
-      if (!product_name || product_name.trim().length === 0) {
-        throw new BadRequestException('Product product_name must be provided');
-      }
-
-      // Panggil metode filterByName dari service
-      return await this.productService.filterByName(product_name);
-    } catch (error) {
-      // Tangani pengecualian dan lempar kembali error jika diperlukan
-      if (error instanceof NotFoundException) {
-        throw new NotFoundException(error.message);
-      } else if (error instanceof ConflictException) {
-        throw new ConflictException(error.message);
-      } else {
-        throw error;
-      }
     }
   }
 }

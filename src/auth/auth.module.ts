@@ -13,16 +13,17 @@ import { User } from '#/user/entities/user.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Role, User]),
-    UserModule, // Memasukkan modul user
+    UserModule,
     RoleModule,
-    PassportModule, // Untuk strategi autentikasi
+    PassportModule.register({defaultStrategy: 'jwt'}),
     JwtModule.register({
       global: true,
-      secret: 'yourSecretKey', // Ganti dengan secret key Anda
-      signOptions: { expiresIn: '1d' }, // Atur masa berlaku token
+      secret: 'user123', // Ganti dengan secret key Anda
+      signOptions: { expiresIn: '1d' },
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService, UserService],
+  exports: [AuthService]
 })
 export class AuthModule {}

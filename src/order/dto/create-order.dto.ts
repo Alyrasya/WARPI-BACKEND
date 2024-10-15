@@ -1,15 +1,13 @@
-import { IsArray, IsNotEmpty, IsString } from "class-validator";
+import { ArrayMinSize, IsArray, IsNotEmpty } from "class-validator";
 
 export class CreateOrderDto {
-
-    @IsString()
-    @IsNotEmpty()
-    orderers_name: string; // Nama pemesan yang harus diinput
-
+    
     @IsArray()
     @IsNotEmpty()
+    @ArrayMinSize(1)
     products: {
         product_id: string;
-        qty: number;
+        qty?: number;
     }[];
 }
+                                                

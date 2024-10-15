@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Put, Param, ParseUUIDPipe, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, ParseUUIDPipe, UseGuards, Req, Query, NotFoundException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { CreateCashierDto } from './dto/create-cashier.dto';
@@ -13,23 +13,31 @@ export class UserController {
   ) {}
   
   @Post('register')
-  async create(@Body() registerCustomerDto: RegisterCustomerDto) {
+  async createCustomer(@Body() registerCustomerDto: RegisterCustomerDto) {
     // Menggunakan DTO sebagai parameter
     const user = await this.userService.register(registerCustomerDto);
     return user;
   }
 
-  @Post('createCashier')
+  @Post('create/cashier')
   async createCashier(@Body() createCashierDto: CreateCashierDto) {
     // Menggunakan DTO sebagai parameter
     const cashier = await this.userService.createCashier(createCashierDto);
     return cashier;
   }
 
-  // Endpoint untuk mendapatkan semua user dengan role 'cashier' dan menghitung totalnya
-  @Get('cashiers')
-  async getAllCashier(): Promise<{cashiers: User[], total: number, }> {
-    return this.userService.getAllCashier();
+  @Get('getAll')
+  async getAllCashiers(@Query('usernameOrEmail') usernameOrEmail?: string): Promise<User[]> {
+    try {
+      // Memanggil service untuk mendapatkan semua user dengan role 'cashier'
+      return await this.userService.getAllCashier(usernameOrEmail);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error; // Lemparkan kembali jika tidak ditemukan
+      }
+      // Penanganan error lain
+      throw new Error('Something went wrong');
+    }
   }
 
   // Endpoint untuk mengubah status user dengan role cashier
@@ -54,10 +62,5 @@ export class UserController {
   @Put(':id/reset-password')
   async resetPassword(@Param('id') id: string): Promise<string> {
     return await this.userService.resetPassword(id);
-  }
-
-  @Get('filter/user')
-  async filterByEmail(@Query('email') email: string) {
-    return this.userService.filterByName(email);
   }
 }

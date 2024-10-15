@@ -2,18 +2,11 @@ import * as bcrypt from 'bcrypt';
 import { Role } from '#/role/entities/role.entity';
 import { StatusUser, User } from '#/user/entities/user.entity';
 
-// Jumlah rounds untuk salt
-const salt = 10;
-
-// Fungsi untuk meng-hash password menggunakan bcrypt
-async function hashPassword(password: string): Promise<string> {
-    return await bcrypt.hash(password, salt);
-}
-
 // Fungsi untuk menghasilkan data master pengguna dengan password yang sudah di-hash
 export async function generateUserMasterData(): Promise<Partial<User>[]> {
     const password = 'admin123';
-    const hashedPassword = await hashPassword(password);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     const roleData: Role = {
         id: '3140b0a3-db8e-4384-9abe-be6e3524c5e0',
@@ -26,7 +19,7 @@ export async function generateUserMasterData(): Promise<Partial<User>[]> {
             username: 'admin',
             password: hashedPassword,  
             email: 'admin@gmail.com',
-            // Field salt tidak diperlukan karena bcrypt mengelola salt secara otomatis
+            salt: salt,
             status_user: StatusUser.ACTIVE,
             role: roleData, // Menyertakan data role lengkap
             role_name: 'admin',

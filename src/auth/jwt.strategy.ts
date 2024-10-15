@@ -9,7 +9,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: 'yourSecretKey', // Ubah sesuai kebutuhan
+      secretOrKey: 'user123', // Ubah sesuai kebutuhan
     });
   }
 
@@ -22,6 +22,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // Kembalikan user yang valid
-    return { id: user.id, email: user.email, role_name: user.role.role_name };
+    return { id: user.id, email: user.email, role_name: user.role.role_name, username: user.username };
   }
 }
