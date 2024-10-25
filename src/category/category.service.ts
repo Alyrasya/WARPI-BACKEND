@@ -15,7 +15,7 @@ export class CategoryService {
     private readonly productRepository: Repository<Product>,
   ) {}
 
-  // Fungsi untuk membuat kategori
+  // Fungsi untuk membuat category
   async createCategory(createCategoryDto: CreateCategoryDto): Promise<Category> {
     const { category_name } = createCategoryDto;
 
@@ -29,7 +29,7 @@ export class CategoryService {
       throw new ConflictException('Category with this name already exists');
     }
 
-    // Buat kategori baru
+    // Buat category baru
     const category = this.categoryRepository.create(createCategoryDto);
 
     // Simpan kategori ke database
@@ -44,7 +44,7 @@ export class CategoryService {
         throw new NotFoundException('Category not found');
     }
 
-    let hasUpdates = false;
+    let hasUpdates = false; 
 
     // Perbarui kategori jika ada perubahan
     if (updateCategoryDto.category_name !== undefined) {
@@ -93,69 +93,79 @@ export class CategoryService {
     return category;
   }
 
-  async getAllCategory(page: number, page_size: number, category_name?: string) { 
+  async getAllCategory(page: number, page_size: number, category_name?: string) {
     const query = this.categoryRepository
-      .createQueryBuilder('category')  // Membuat query untuk tabel 'category'
+      .createQueryBuilder('category')
       .select([
-        'category.id',  // Memilih kolom 'id'
-        'category.category_name',  // Memilih kolom 'category_name'
-        'category.status_category',  // Memilih kolom 'status_category'
+        'category.id',
+        'category.category_name',
+        'category.status_category',
+        'category.createdAt'
       ]);
   
-    if (category_name) {  // Jika ada parameter 'category_name'
+    if (category_name) {
       query.where('category.category_name ILIKE :category_name', { category_name: `%${category_name}%` });
-      // Menambahkan filter 'category_name' untuk pencarian yang tidak case-sensitive
     }
+
+    query.orderBy('category.createdAt', 'ASC');
   
     // Paginasi: Skip dan Take
     query.skip((page - 1) * page_size).take(page_size);
-    // Melewatkan (skip) beberapa record berdasarkan nomor halaman dan ukuran halaman
-    // Mengambil (take) sejumlah record sesuai dengan ukuran halaman
   
-    const [categories, totalCount] = await query.getManyAndCount();  // Menjalankan query dan mengambil hasilnya
+    const [categories, totalCount] = await query.getManyAndCount(); 
+
+    if (totalCount === 0) {
+      throw new NotFoundException(
+          category_name
+              ? `Category with name '${category_name}' not found`
+              : `No category found`
+      );
+    }
+
     return { data: categories, totalCount };  // Mengembalikan hasil sebagai objek
   }
-    
   
-  async detailCategory(id: string, product_name?: string): Promise<Product[]> {
-    // Temukan kategori berdasarkan ID dan sertakan relasi produk
+  async detailCategory(id: string, page: number, page_size: number, product_name?: string){
+
     const category = await this.categoryRepository.findOne({
-      where: { id },
-      relations: ['product'], // Memuat produk yang terkait dengan kategori
+        where: { id },
+        relations: ['product'],
     });
-  
-    // Jika kategori tidak ditemukan, lempar NotFoundException
+
     if (!category) {
-      throw new NotFoundException('Category not found');
+        throw new NotFoundException('Category not found');
     }
-  
-    // Buat query builder untuk mengambil produk
+
     const query = this.productRepository
-      .createQueryBuilder('product')
-      .select([
-        'product.product_name',
-        'category.category_name',
-        'product.stock',
-        'product.price',
-        'product.product_photo',
-      ])
-      .innerJoin('product.category', 'category')
-      .where('category.id = :id', { id });
-  
-    // Jika ada parameter product_name, tambahkan kondisi ILIKE untuk pencarian
-    if (product_name) {
+        .createQueryBuilder('product')
+        .select([
+            'product.id',
+            'product.product_name',
+            'category.category_name',
+            'product.stock',
+            'product.price',
+            'product.product_photo',
+            'product.status_product',
+            'product.createdAt'
+        ])
+        .innerJoin('product.category', 'category')
+        .where('category.id = :id', { id });
+
+    if (product_name && product_name.trim().length > 0) {
       query.andWhere('product.product_name ILIKE :product_name', { product_name: `%${product_name}%` });
     }
-  
-    const products = await query.getMany();
-  
-    // Jika tidak ada produk yang ditemukan, lemparkan pesan kesalahan
-    if (products.length === 0 && product_name) {
-      throw new NotFoundException('Product not found in this category');
+
+    query.skip((page - 1) * page_size).take(page_size);
+
+    query.orderBy('product.createdAt', 'ASC');
+
+    const [products, totalCount] = await query.getManyAndCount();
+
+    if (totalCount === 0 && product_name) {
+        throw new NotFoundException('Product not found in this category');
     }
-  
-    // Kembalikan produk yang terkait dengan kategori
-    return products;
+
+    return { data: products, totalCount };
   }
 
   async countCategories(): Promise<number> {

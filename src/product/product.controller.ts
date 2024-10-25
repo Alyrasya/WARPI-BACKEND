@@ -6,7 +6,6 @@ import { diskStorage } from 'multer';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Express } from 'express';
-import { Product } from './entities/product.entity';
 
 @Controller('product')
 export class ProductController {
@@ -15,7 +14,7 @@ export class ProductController {
   @Post('create')
   @UseInterceptors(FileInterceptor('product_photo', {
     storage: diskStorage({
-      destination: './src/product/photo_product', // Ganti dengan direktori upload Anda
+      destination: './src/product/photo_product',
       filename: (req, file, cb) => {
         const uniqueName = `${Date.now()}${extname(file.originalname)}`;
         cb(null, uniqueName);
@@ -36,18 +35,12 @@ export class ProductController {
     @Body() createProductDto: CreateProductDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-
-    // Log data yang diterima
-    console.log('DTO:', createProductDto);
-    console.log('Uploaded file:', file);
-
     try {
       if (file) {
         createProductDto.product_photo = file.filename;
       }
       return await this.productService.createProduct(createProductDto);
     } catch (error) {
-      // Tangani error di sini
       console.error('Error creating product:', error.message);
       throw new Error(`Error creating product: ${error.message}`);
     }
@@ -79,26 +72,19 @@ export class ProductController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     try {
-      // Periksa apakah produk dengan ID tersebut ada
+      // Cek apakah produk dengan ID tersebut ada
       const existingProduct = await this.productService.getByIdProduct(id);
       if (!existingProduct) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
       }
 
-      // Jika file di-upload, perbarui nama file di DTO
+      // Jika ada file yang di-upload, tambahkan ke DTO
       if (file) {
         updateProductDto.product_photo = file.filename;
-      } else if (!updateProductDto.product_photo) {
-        // Jika tidak ada file dan `product_photo` tidak diset, pertahankan nama file yang ada
-        updateProductDto.product_photo = existingProduct.product_photo;
       }
 
-      // Perbarui produk
+      // Panggil service untuk mengupdate produk
       const updatedProduct = await this.productService.updateProduct(id, updateProductDto);
-
-      if (!updatedProduct) {
-        throw new HttpException('Error updating product', HttpStatus.INTERNAL_SERVER_ERROR);
-      }
 
       return updatedProduct;
     } catch (error) {
@@ -108,19 +94,21 @@ export class ProductController {
 
   @Get('getAll')
   async getAllProducts(
+    @Query('page') page: number,
+    @Query('page_size') page_size: number,
     @Query('product_name') product_name?: string,
-    @Query('category_name') category_name?: string
-  ): Promise<any[]> {
+    @Query('category_name') category_name?: string,
+  ): Promise<{ data: any[]; totalCount: number }> {
     try {
-      // Call the service function to fetch the products
-      const products = await this.productService.getAllProduct(product_name, category_name);
-      return products;
+      // Call the service function to fetch the products with pagination
+      const { data, totalCount } = await this.productService.getAllProduct(page, page_size, product_name, category_name);
+      return { data, totalCount };  // Mengembalikan data dan totalCount
     } catch (error) {
       // Throw a BadRequestException if any error occurs
       throw new BadRequestException(error.message);
     }
   }
-  
+
   @Get('/:id/getById')
   async getByIdProduct(@Param('id', ParseUUIDPipe) id: string) {
     try {

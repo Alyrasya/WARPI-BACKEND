@@ -1,4 +1,3 @@
-import { Type } from 'class-transformer';
 import {  IsEnum, IsOptional } from 'class-validator';
 import { StatusCategory } from '../entities/category.entity';
 

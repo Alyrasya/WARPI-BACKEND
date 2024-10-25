@@ -36,7 +36,6 @@ export class OrderService {
     
       // 3. Set no_order menjadi jumlah transaksi hari ini + 1
       const no_order = countTransactionsToday + 1;
-    
       let total_price_transaction = 0;
     
       // 4. Buat transaksi baru
@@ -57,7 +56,7 @@ export class OrderService {
         if (!product) {
           throw new BadRequestException(`Product not found`);
         }
-    
+
         // Cek apakah stok cukup
         if (product.stock < qty) {
           throw new BadRequestException(`Insufficient stock for product`);

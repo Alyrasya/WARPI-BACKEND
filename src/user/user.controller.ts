@@ -14,23 +14,25 @@ export class UserController {
   
   @Post('register')
   async createCustomer(@Body() registerCustomerDto: RegisterCustomerDto) {
-    // Menggunakan DTO sebagai parameter
     const user = await this.userService.register(registerCustomerDto);
     return user;
   }
 
   @Post('create/cashier')
   async createCashier(@Body() createCashierDto: CreateCashierDto) {
-    // Menggunakan DTO sebagai parameter
     const cashier = await this.userService.createCashier(createCashierDto);
     return cashier;
   }
 
   @Get('getAll')
-  async getAllCashiers(@Query('usernameOrEmail') usernameOrEmail?: string): Promise<User[]> {
+  async getAllCashiers(
+    @Query('page') page: number,
+    @Query('page_size') page_size: number,
+    @Query('usernameOrEmail') usernameOrEmail?: string
+  ): Promise<{ data: User[]; totalCount: number }> {
     try {
       // Memanggil service untuk mendapatkan semua user dengan role 'cashier'
-      return await this.userService.getAllCashier(usernameOrEmail);
+      return await this.userService.getAllCashier(page, page_size, usernameOrEmail);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error; // Lemparkan kembali jika tidak ditemukan
