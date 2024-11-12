@@ -1,8 +1,7 @@
-import { Controller, Get, Post, Body, Put, Param, Query, ParseUUIDPipe, NotFoundException, BadRequestException, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Query, ParseUUIDPipe, NotFoundException, Res, HttpCode, HttpStatus, HttpException, BadRequestException } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { Product } from '#/product/entities/product.entity';
 import { Category } from './entities/category.entity';
 import { join } from 'path';
 import { of } from 'rxjs';
@@ -14,16 +13,30 @@ export class CategoryController {
   ) {}
 
   @Post('create')
-  async createCategory(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoryService.createCategory(createCategoryDto);
+  @HttpCode(HttpStatus.CREATED)
+  async createCategory(@Body() data: CreateCategoryDto) {
+    return this.categoryService.createCategory(data);
   }
 
   @Put(':id/edit')
-  async updateCategory(
-    @Param('id', new ParseUUIDPipe) id: string,
-    @Body() updateCategoryDto: UpdateCategoryDto,
-  ) {
-    return this.categoryService.updateCategory(id, updateCategoryDto);
+  async editCategory(
+      @Param('id', new ParseUUIDPipe()) id: string,
+      @Body() updateCategoryDto: UpdateCategoryDto,
+  ){
+      try {
+          const editProduct = await this.categoryService.editCategory(id, updateCategoryDto);
+          return editProduct;
+
+      } catch (error) {
+          if (error instanceof NotFoundException) {
+              throw new NotFoundException('Kategori tidak ditemukan');
+          }
+          if (error instanceof BadRequestException) {
+              throw new BadRequestException(`Data tidak valid: ${error.message}`);
+          }
+          console.error('Terjadi kesalahan saat memperbarui kategori:', error.message);
+          throw new HttpException(`Gagal memperbarui kategori: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
   }
 
   @Get('getAll')
@@ -36,13 +49,13 @@ export class CategoryController {
       return await this.categoryService.getAllCategory(page, page_size, category_name);
     } catch (error) {
       if (error instanceof NotFoundException) {
-        throw error; // Lemparkan kembali jika tidak ditemukan
+        throw error;
       }
-      // Penanganan error lain
-      throw new Error('Something went wrong');
+      console.error('Kesalahan saat mengambil data kategori:', error.message);
+      throw new HttpException('Terjadi kesalahan saat mengambil data kategori.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-
+  
   @Get(':id/detail')
   async getProductsByCategory(
     @Param('id') id: string,
@@ -51,14 +64,13 @@ export class CategoryController {
     @Query('product_name') product_name?: string
   ){
     try {
-      // Memanggil service detailCategory untuk mendapatkan produk berdasarkan id kategori dan pencarian produk
-      const products = await this.categoryService.detailCategory(id, page, page_size, product_name);
-      return products;
+      return await this.categoryService.detailCategory(id, page, page_size, product_name);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error('Error while retrieving products');
+      console.error('Kesalahan saat mengambil data produk berdasarkan kategori:', error.message);
+      throw new HttpException('Terjadi kesalahan saat mengambil data produk berdasarkan kategori.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

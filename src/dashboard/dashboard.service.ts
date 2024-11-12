@@ -22,7 +22,7 @@ export class DashboardService {
     private readonly transactionService: TransactionService,
   ) {}
 
-  async getAdminSummary(): Promise<AdminSummary> {
+  async getAdminSummary(){
     const totalCategory = await this.categoryService.countCategories();
     const totalProduct = await this.productService.countProducts();
     const totalCashier = await this.userService.countCashiers();

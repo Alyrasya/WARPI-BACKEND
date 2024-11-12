@@ -1,4 +1,4 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 
@@ -9,17 +9,25 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
-    const { email, password } = loginDto;
-    const result = await this.authService.login(email, password);
+    const result = await this.authService.login(loginDto);
 
+    // Cek jika password change diperlukan
     if (result.requiresPasswordChange) {
-      // Berikan respons yang memberi tahu pengguna untuk mengganti password
-      throw new BadRequestException({
-        message: 'Password anda perlu diganti.',
-      });
+        return {
+            status: HttpStatus.FORBIDDEN,
+            requiresPasswordChange: true,
+            message: 'Password Anda perlu diganti.',
+            access_token: result.access_token,
+        };
     }
 
-    return result;
+    return {
+        status: HttpStatus.OK,
+        access_token: result.access_token,
+        requiresPasswordChange: result.requiresPasswordChange,
+        message: result.message,
+    };
   }
 }

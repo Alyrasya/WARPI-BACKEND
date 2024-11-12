@@ -14,7 +14,7 @@ import {
 
 export enum StatusProduct {
     ACTIVE = 'active',
-    INACTIVE = 'inactive',
+    INACTIVE = 'inactive'
 }
 
 @Entity()
@@ -63,7 +63,7 @@ export class Product {
     deletedAt: Date;
 
     @ManyToOne(() => Category, (category) => category.id)
-    @JoinColumn({ name: 'category_id', referencedColumnName: 'id' })
+    @JoinColumn({ name: 'id_category', referencedColumnName: 'id' })
     category: Category
 
     @JoinColumn({ name: 'category_name', referencedColumnName: 'category_name' })

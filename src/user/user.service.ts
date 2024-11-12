@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { ConflictException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StatusUser, User } from './entities/user.entity';
 import { Role } from '#/role/entities/role.entity';
@@ -20,111 +20,98 @@ export class UserService {
 
   // Fungsi untuk generate salt dan hash password
   private async generatePasswordHash(password: string): Promise<{ salt: string, hash: string }> {
-    const salt = await bcrypt.genSalt(); // Generate salt secara otomatis
-    const hash = await bcrypt.hash(password, salt); // Hash password dengan salt
+    const salt = await bcrypt.genSalt();
+    const hash = await bcrypt.hash(password, salt);
     return { salt, hash };
   }
 
-  async register(registerCustomerDto: RegisterCustomerDto): Promise<User> {
-    const { username, email, password } = registerCustomerDto;
+  // Fungsi untuk register Customer
+  async register(data: RegisterCustomerDto){
+    const { username, email, password } = data;
 
-    console.log('Receive registration data:', registerCustomerDto); // Log data pendaftaran
+    const role = await this.roleRepository.findOne({ where: { role_name: 'customer' } });
+      if (!role) {
+          throw new NotFoundException('Role customer tidak ditemukan');
+      }
+
+    const existingEmail = await this.userRepository.findOne({
+      where: { username: data.username, email: data.email } 
+    });
+
+      if (existingEmail) {
+          throw new ConflictException('Pengguna dengan username dan email ini sudah ada');
+      }
+
+    const { salt, hash } = await this.generatePasswordHash(password);
 
     try {
-        // Mencari peran dengan role_name 'customer'
-        const role = await this.roleRepository.findOne({ where: { role_name: 'customer' } });
-        if (!role) {
-            console.error('Role Customer Not Found'); // Log kesalahan
-            throw new InternalServerErrorException('The customer role was not found in the database');
-        }
+      const newUser = this.userRepository.create({
+          id: uuidv4(),
+          username,
+          email,
+          password: hash,
+          salt,
+          status_user: StatusUser.ACTIVE,
+          role_name: role.role_name,
+          role,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+      });
 
-        // Memeriksa apakah email sudah ada
-        const existingEmail = await this.userRepository.findOne({ where: { email } });
-        if (existingEmail) {
-            throw new ConflictException('Email with this name already exists');
-        }
+      const savedUser = await this.userRepository.save(newUser);
+      return savedUser;
 
-        // Menghasilkan password hash
-        const { salt, hash } = await this.generatePasswordHash(password);
-
-        // Membuat data pengguna baru
-        const newUser = this.userRepository.create({
-            id: uuidv4(),
-            username,
-            email,
-            password: hash,
-            salt,
-            status_user: StatusUser.ACTIVE,
-            role_id: role.id,
-            role_name: role.role_name,
-            role,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        });
-
-        console.log('User data to be stored:', newUser); // Log data pengguna
-
-        // Menyimpan pengguna ke database
-        const savedUser = await this.userRepository.save(newUser);
-        console.log('User saved successfully:', savedUser); // Log pengguna yang berhasil disimpan
-
-        return savedUser;
-    } catch (error) {
-        console.error('Error saving user:', error); // Log kesalahan
-        // Berikan informasi lebih spesifik tergantung jenis kesalahan
-        if (error instanceof ConflictException) {
-            throw error; // Melempar kembali konflik
-        }
-        throw new InternalServerErrorException('Unexpected error while saving account');
+    } 
+    catch{
+      throw new InternalServerErrorException('Terjadi kesalahan pada server');
     }
   }
 
   // Fungsi untuk membuat Cashier dengan default password
-  async createCashier(createCashierDto: CreateCashierDto): Promise<User> {
-    const { username, email } = createCashierDto;
+  async createCashier(data: CreateCashierDto){
+    const { username, email } = data;
 
-    // Mencari peran dengan role_name 'cashier'
     const role = await this.roleRepository.findOne({ where: { role_name: 'cashier' } });
-
-    if (!role) {
-      throw new Error('Role cashier not found');
-    }
+      if (!role) {
+        throw new Error('Role kasir tidak ditemukan');
+      }
 
     const existingEmail = await this.userRepository.findOne({
-      where: { username: createCashierDto.username, email: createCashierDto.email }
+      where: { username: data.username, email: data.email }
     });
   
-    if (existingEmail) {
-      throw new ConflictException('Email with this name already exists');
-    }
+      if (existingEmail) {
+        throw new ConflictException('Pengguna dengan username dan email ini sudah ada');
+      }
 
-    // Menggunakan default password (misalnya 'cashier123')
     const defaultPassword = 'cashier123';
 
-    // Generate salt dan hash untuk default password
     const { salt, hash } = await this.generatePasswordHash(defaultPassword);
 
-    // Membuat data pengguna baru dengan peran 'cashier'
-    const newCashier = this.userRepository.create({
-      id: uuidv4(),
-      username,
-      email,
-      password: hash,
-      salt,
-      status_user: StatusUser.ACTIVE,
-      role_id: role.id,
-      role_name: role.role_name,
-      role: role,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    // Menyimpan pengguna ke database
-    return this.userRepository.save(newCashier);
+    try{
+      const newCashier = this.userRepository.create({
+        id: uuidv4(),
+        username,
+        email,
+        password: hash,
+        salt,
+        status_user: StatusUser.ACTIVE,
+        role_name: role.role_name,
+        role: role,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+  
+      const savedCashier = await this.userRepository.save(newCashier);
+      return savedCashier;
+    }
+    catch{
+      throw new InternalServerErrorException('Terjadi kesalahan pada server');
+    }
   }
 
+  // Fungsi untuk menampilkan seluruh data user dengan role cashier
   async getAllCashier(page: number, page_size: number, usernameOrEmail?: string) {
-    // Membuat query builder untuk mengambil semua user dengan role 'cashier'
     const query = this.userRepository
         .createQueryBuilder('user')
         .select([
@@ -136,7 +123,7 @@ export class UserService {
           'user.createdAt'
         ])
         .innerJoin('user.role', 'role')
-        .where('role.role_name = :role', { role: 'cashier' }); // Filter hanya role cashier
+        .where('role.role_name = :role', { role: 'cashier' });
 
     if (usernameOrEmail) {
         query.andWhere('(user.username ILIKE :usernameOrEmail OR user.email ILIKE :usernameOrEmail)', {
@@ -146,12 +133,10 @@ export class UserService {
 
     query.orderBy('user.createdAt', 'ASC');
 
-    // Paginasi: Skip dan Take
     query.skip((page - 1) * page_size).take(page_size);
 
     const [cashiers, totalCount] = await query.getManyAndCount();
 
-    // Jika tidak ada cashier yang ditemukan, lemparkan NotFoundException
     if (totalCount === 0) {
         throw new NotFoundException(
             usernameOrEmail
@@ -160,96 +145,137 @@ export class UserService {
         );
     }
 
-    return { data: cashiers, totalCount }; // Menyertakan totalCount
+    return { data: cashiers, totalCount };
   }
 
-  async editStatusCashier(id: string, updateStatusDto: UpdateStatusDto): Promise<User> {
-    const { status_user } = updateStatusDto;
-    // Menggunakan getUserById untuk mencari user berdasarkan ID
-    const user = await this.getUserById(id);
-    // Periksa apakah role user adalah 'cashier'
-    if (user.role.role_name !== 'cashier') {
-      throw new NotFoundException(`User is not a cashier`);
+  // Fungsi untuk mengubah status_user role cashier
+  async editStatusCashier(id: string, updateStatusDto: UpdateStatusDto) {
+    try {
+      const { status_user } = updateStatusDto;
+      const user = await this.getUserById(id);
+  
+      if (user.role.role_name !== 'cashier') {
+        throw new NotFoundException('User is not a cashier');
+      }
+  
+      user.status_user = status_user;
+      await this.userRepository.save(user);
+  
+      return {
+        success: 200,
+        message: 'Status cashier berhasil diperbarui',
+        data: user,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Terjadi kesalahan saat mengubah status',
+        error instanceof ConflictException ? HttpStatus.CONFLICT : HttpStatus.INTERNAL_SERVER_ERROR
+     );
     }
-    // Update status user
-    user.status_user = status_user;
-    return this.userRepository.save(user); // Simpan perubahan di database
   }
   
-  async countCashiers(): Promise<number> {
+  // Fungsi untuk menghitung total cashier
+  async countCashiers(){
     return await this.userRepository.count({
-      where: { role_name: 'cashier' }, // Filter untuk hanya menghitung user dengan role 'cashier'
+      where: { role_name: 'cashier' }
     });
   }
 
-  async getUserById(id: string): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id }, relations:{role:true}});
+  // Fungsi untuk menemukan user berdasarkan ID
+  async getUserById(id: string) {
+    const user = await this.userRepository.findOne({
+      where: {
+        id,
+        role: { role_name: 'cashier' },
+      },
+      relations: { role: true },
+    });
+  
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundException(`User dengan ID ${id} dan role 'cashier' tidak ditemukan`);
     }
     return user;
   }
 
   // Fungsi untuk mengubah password user
-  async editPassword(id: string, currentPassword: string, newPassword: string, confirmPassword: string): Promise<string> {
-    // Menggunakan getUserById untuk mendapatkan user
-    const user = await this.getUserById(id);
+  async editPassword(id: string, currentPassword: string, newPassword: string, confirmPassword: string){
+    try{
+      const user = await this.getUserById(id);
 
-    // Cek apakah currentPassword sesuai dengan password yang tersimpan (gunakan bcrypt untuk membandingkan)
-    const passwordMatches = await bcrypt.compare(currentPassword, user.password);
-    if (!passwordMatches) {
-      return 'Password saat ini salah';
+      const passwordMatches = await bcrypt.compare(currentPassword, user.password);
+      if (!passwordMatches) {
+        return 'Password saat ini salah';
+      }
+
+      const newPasswordMatchesOld = await bcrypt.compare(newPassword, user.password);
+      if (newPasswordMatchesOld) {
+        return 'Password baru tidak boleh sama dengan password lama';
+      }
+
+      if (newPassword !== confirmPassword) {
+        return 'Password baru dan konfirmasi password tidak cocok';
+      }
+
+      const { hash } = await this.generatePasswordHash(newPassword);
+      user.password = hash;
+
+      await this.userRepository.save(user);
+
+      return {
+        success: 200,
+        message: 'Password berhasil diubah',
+        data: user
+      };
     }
-
-    // Cek apakah newPassword dan confirmPassword cocok
-    if (newPassword !== confirmPassword) {
-      return 'Password baru dan konfirmasi password tidak cocok';
+    catch(error){
+      throw new HttpException(
+        error.message || 'Terjadi kesalahan saat mengubah password',
+        error instanceof ConflictException ? HttpStatus.CONFLICT : HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
-
-    // Cek apakah password baru tidak sama dengan password lama
-    const newPasswordMatchesOld = await bcrypt.compare(newPassword, user.password);
-    if (newPasswordMatchesOld) {
-      return 'Password baru tidak boleh sama dengan password lama';
-    }
-
-    // Jika validasi terpenuhi, hash password baru
-    const { hash } = await this.generatePasswordHash(newPassword);
-    user.password = hash;
-
-    // Simpan perubahan ke database
-    await this.userRepository.save(user);
-
-    return 'Password berhasil diubah';
   }
 
   // Fungsi untuk mereset password user ke default
-  async resetPassword(id: string): Promise<string> {
-    const user = await this.getUserById(id);
+  async resetPassword(id: string){
+    try{
+      const user = await this.getUserById(id);
+      const defaultPassword = 'cashier123';
 
-    // Password default yang akan diatur
-    const defaultPassword = 'cashier123';
+      const currentPasswordIsDefault = await bcrypt.compare(defaultPassword, user.password);
+      if (currentPasswordIsDefault) {
+        throw new ConflictException('Password sudah merupakan password default');
+      }
 
-    // Cek apakah password saat ini sudah default
-    const currentPasswordIsDefault = await bcrypt.compare(defaultPassword, user.password);
-    if (currentPasswordIsDefault) {
-      throw new ConflictException('Password sudah merupakan password default');
+      const { hash } = await this.generatePasswordHash(defaultPassword);
+      user.password = hash;
+
+      await this.userRepository.save(user);
+
+      return{
+        success: 200,
+        message: 'Password berhasil direset ke default',
+        data: user
+      }
     }
-
-    // Hash password default
-    const { hash } = await this.generatePasswordHash(defaultPassword);
-    user.password = hash;
-
-    // Simpan perubahan ke database
-    await this.userRepository.save(user);
-
-    return 'Password berhasil direset ke default';
+    catch(error){
+      return {
+        success: error instanceof ConflictException ? 409 : 500,
+        message: error.message || 'Terjadi kesalahan saat mereset password',
+      };
+    }
   }
 
-  // Mendapatkan user berdasarkan username
-  async findUserByEmail(email: string): Promise<User | undefined> {
+  // Mendapatkan user berdasarkan email
+  async findUserByEmail(email: string){
     return this.userRepository.findOne({
       where: { email },
-      relations: ['role'], // Termasuk relasi dengan tabel role
+      relations: { role: true }
     });
+  }
+
+  async getProfile(id: string){
+    return this.userRepository.findOne({
+      where: { id }
+    })
   }
 }

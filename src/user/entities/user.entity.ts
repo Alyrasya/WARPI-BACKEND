@@ -30,9 +30,6 @@ export class User {
     })
     status_user: StatusUser;
 
-    @Column()
-    role_id: string;
-
     @CreateDateColumn({
         type: 'timestamp with time zone',
         nullable: false,
@@ -52,7 +49,7 @@ export class User {
     deletedAt: Date;
 
     @ManyToOne(() => Role, role => role.users)
-    @JoinColumn({ name: 'role_id', referencedColumnName: 'id' })
+    @JoinColumn({ name: 'id_role', referencedColumnName: 'id' })
     role: Role;
 
     @JoinColumn({ name: 'role_name', referencedColumnName: 'role_name' })

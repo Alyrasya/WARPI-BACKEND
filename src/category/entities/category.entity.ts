@@ -11,7 +11,7 @@ import {
 
 export enum StatusCategory {
   ACTIVE = 'active',
-  INACTIVE = 'inactive',
+  INACTIVE = 'inactive'
 }
 
 @Entity()

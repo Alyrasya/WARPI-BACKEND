@@ -15,115 +15,124 @@ export class ProductService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  async createProduct(createProductDto: CreateProductDto): Promise<Product> {
+  // Fungsi untuk membuat product
+  async createProduct(data: CreateProductDto){
     const category = await this.categoryRepository.findOne({
-        where: { id: createProductDto.id_category },
+        where: { id: data.id_category },
     });
 
     if (!category) {
-        throw new NotFoundException('Category not found');
+        throw new NotFoundException('Kategori Tidak Ditemukan');
     }
 
-    // Periksa apakah produk dengan nama yang sama sudah ada dalam kategori yang sama
     const existingProduct = await this.productRepository.findOne({
         where: {
-            product_name: createProductDto.product_name,
-            category: { id: createProductDto.id_category },
+            product_name: data.product_name,
+            category: { id: data.id_category },
         },
     });
 
     if (existingProduct) {
-        throw new ConflictException('Product with this name already exists in the specified category');
+        throw new ConflictException(`Produk dengan product_name dan kategori tersebut sudah ada`);
     }
 
     try {
-        // Buat produk baru dan hubungkan dengan kategori
         const newProduct = this.productRepository.create({
-            ...createProductDto,
+            ...data,
             stock: 0,
             category_name: category.category_name,
-            category, // Hubungkan kategori dengan produk
         });
 
-        // Simpan produk dan tunggu hingga selesai
-        const savedProduct = await this.productRepository.save(newProduct);
-        return savedProduct;
-    } catch (error) {
-        // Tangani kesalahan yang tidak terduga
-        console.error('Error occurred while saving the product:', error);
-        throw new InternalServerErrorException('An unexpected error occurred while saving the product');
+        const product = await this.productRepository.save(newProduct);
+        return product;
+    } 
+    catch{
+      throw new InternalServerErrorException('Terjadi kesalahan pada server');
     }
   }
 
-  async updateProduct(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
-    // Cek apakah produk dengan ID tersebut ada
-    const product = await this.getByIdProduct(id);
-    if (!product) {
-      throw new NotFoundException('Product not found');
+  // Fungsi untuk mengedit product
+  async updateProduct(id: string, data: UpdateProductDto){
+    try{
+      const product = await this.getByIdProduct(id);
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+    
+      const { 
+        product_name,
+        description,
+        price,
+        stock,
+        product_photo,
+        status_product
+      } = data;
+      let isUpdated = false;
+
+      // Validasi nilai negatif untuk stock dan price
+      if (price !== undefined && product.price < 0) {
+        throw new BadRequestException('Price tidak boleh nilai negatif');
+      }
+    
+      if (stock !== undefined && product.stock < 0) {
+        throw new BadRequestException('Stock tidak boleh nilai negatif');
+      }
+    
+      // Hanya perbarui field yang diberikan (tidak overwrite dengan nilai kosong)
+      if (product_name !== undefined && product.product_name !== product_name) {
+        product.product_name = product_name;
+        isUpdated = true;
+      }
+    
+      if (description !== undefined && product.description !== description) {
+        product.description = description;
+        isUpdated = true;
+      }
+    
+      if (price !== undefined && product.price !== price) {
+        product.price = price;
+        isUpdated = true;
+      }
+    
+      if (stock !== undefined && product.stock !== stock) {
+        product.stock = stock;
+        isUpdated = true;
+      }
+    
+      if (product_photo !== undefined && product.product_photo !== product_photo) {
+        product.product_photo = product_photo;
+        isUpdated = true;
+      }
+    
+      if (status_product !== undefined && product.status_product !== status_product) {
+        product.status_product = status_product;
+        isUpdated = true;
+      }
+
+      if (!isUpdated) return product;
+    
+      const updateProduct = await this.productRepository.save(product);
+
+      return updateProduct;
     }
-  
-    // Validasi nilai negatif untuk stock dan price
-    if (updateProductDto.price !== undefined && updateProductDto.price < 0) {
-      throw new BadRequestException('Price cannot be negative');
+    catch(error){
+      console.error('Error saat memperbarui produk:', error.message);
+      throw new Error(`Gagal memperbarui produk: ${error.message}`);
     }
-  
-    if (updateProductDto.stock !== undefined && updateProductDto.stock < 0) {
-      throw new BadRequestException('Stock cannot be negative');
-    }
-  
-    // Hanya perbarui field yang diberikan (tidak overwrite dengan nilai kosong)
-    if (updateProductDto.product_name !== undefined && updateProductDto.product_name !== '') {
-      product.product_name = updateProductDto.product_name;
-    }
-  
-    if (updateProductDto.description !== undefined && updateProductDto.description !== '') {
-      product.description = updateProductDto.description;
-    }
-  
-    if (updateProductDto.price !== undefined) {
-      product.price = updateProductDto.price;
-    }
-  
-    if (updateProductDto.stock !== undefined) {
-      product.stock = updateProductDto.stock;
-    }
-  
-    if (updateProductDto.product_photo !== undefined && updateProductDto.product_photo !== '') {
-      product.product_photo = updateProductDto.product_photo;
-    }
-  
-    if (updateProductDto.status_product !== undefined) {
-      product.status_product = updateProductDto.status_product;
-    }
-  
-    // Simpan produk yang sudah diperbarui ke database
-    return this.productRepository.save(product);
   }    
 
-  // Digunakan untuk melihat detail product
-  async getByIdProduct(id: string): Promise<Product> {
-    const product = await this.productRepository
-      .createQueryBuilder('product')
-      .select([
-        'product.product_name',
-        'product.description',
-        'product.price',
-        'product.category_name',
-        'product.status_product',
-        'product.product_photo',
-        'product.stock',
-      ])
-      .where('product.id = :id', { id }) // Tambahkan kondisi untuk mencari berdasarkan id
-      .getOne();
+  // Fungsi untuk melihat detail produk
+  async getByIdProduct(id: string){
+    const product = await this.productRepository.findOneBy({ id })
 
     if (!product) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException(`Produk dengan ID ${id} tidak ditemukan`);
     }
-
     return product;
   }
   
-  async getAllProduct(page: number, page_size: number, product_name?: string, category_name?: string): Promise<{ data: any[]; totalCount: number }> {
+  // Fungsi untuk mendapatkan seluruh produk
+  async getAllProduct(page: number, page_size: number, product_name?: string, category_name?: string){
     const query = this.productRepository
       .createQueryBuilder('product')
       .select([
@@ -137,17 +146,14 @@ export class ProductService {
         'product.stock',
       ]);
     
-    // Jika ada parameter category_name, tambahkan kondisi WHERE untuk filter kategori
-    if (category_name && category_name.toLowerCase() !== 'all') {
-      query.where('product.category_name = :category_name', { category_name });
+    if (category_name) {
+      query.where('product.category_name ILIKE :category_name', { category_name: `%${category_name}%` });
     }
     
-    // Jika ada parameter product_name, tambahkan kondisi ILIKE untuk pencarian
     if (product_name) {
       query.andWhere('product.product_name ILIKE :product_name', { product_name: `%${product_name}%` });
     }
     
-    // Paginasi: Skip dan Take
     query.skip((page - 1) * page_size).take(page_size);
     
     const [products, totalCount] = await query.getManyAndCount();
@@ -155,15 +161,16 @@ export class ProductService {
     if (totalCount === 0) {
       throw new NotFoundException(
         product_name
-          ? `Product with name '${product_name}' not found`
-          : `No product found`
+          ? `Produk dengan nama '${product_name}' tidak ditemukan`
+          : `Produk tidak ditemukan` 
       );
     }
   
-    return { data: products, totalCount };  // Mengembalikan hasil sebagai objek
+    return { data: products, totalCount };
   }   
   
-  async countProducts(): Promise<number> {
+  //Fungsi untuk menghitung total produk
+  async countProducts(){
     return await this.productRepository.count();
   }
 }
