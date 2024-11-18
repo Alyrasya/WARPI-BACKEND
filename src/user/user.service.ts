@@ -1,11 +1,11 @@
-import { ConflictException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StatusUser, User } from './entities/user.entity';
 import { Role } from '#/role/entities/role.entity';
 import { Repository } from 'typeorm';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { v4 as uuidv4 } from 'uuid';
-import * as bcrypt from 'bcrypt';  // Import bcrypt untuk hashing
+import * as bcrypt from 'bcrypt';
 import { CreateCashierDto } from './dto/create-cashier.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 
@@ -155,7 +155,7 @@ export class UserService {
       const user = await this.getUserById(id);
   
       if (user.role.role_name !== 'cashier') {
-        throw new NotFoundException('User is not a cashier');
+        throw new NotFoundException('User ini bukan kasir');
       }
   
       user.status_user = status_user;
@@ -198,42 +198,50 @@ export class UserService {
   }
 
   // Fungsi untuk mengubah password user
-  async editPassword(id: string, currentPassword: string, newPassword: string, confirmPassword: string){
-    try{
+  async editPassword(
+    id: string,
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string
+  ) {
+    try {
       const user = await this.getUserById(id);
-
+  
       const passwordMatches = await bcrypt.compare(currentPassword, user.password);
       if (!passwordMatches) {
-        return 'Password saat ini salah';
+        throw new BadRequestException('Password saat ini salah');
       }
-
+  
       const newPasswordMatchesOld = await bcrypt.compare(newPassword, user.password);
       if (newPasswordMatchesOld) {
-        return 'Password baru tidak boleh sama dengan password lama';
+        throw new ConflictException('Password baru tidak boleh sama dengan password lama');
       }
-
+  
       if (newPassword !== confirmPassword) {
-        return 'Password baru dan konfirmasi password tidak cocok';
+        throw new BadRequestException('Password baru dan konfirmasi password tidak cocok');
       }
-
+  
       const { hash } = await this.generatePasswordHash(newPassword);
       user.password = hash;
-
+  
       await this.userRepository.save(user);
-
+  
       return {
-        success: 200,
+        statusCode: 200,
+        success: true,
         message: 'Password berhasil diubah',
-        data: user
+        data: { id: user.id, username: user.username },
       };
-    }
-    catch(error){
+    } catch (error) {
       throw new HttpException(
-        error.message || 'Terjadi kesalahan saat mengubah password',
-        error instanceof ConflictException ? HttpStatus.CONFLICT : HttpStatus.INTERNAL_SERVER_ERROR
+        {
+          statusCode: error instanceof HttpException ? error.getStatus() : 500,
+          message: error.message || 'Terjadi kesalahan saat mengubah password',
+        },
+        error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
-  }
+  }  
 
   // Fungsi untuk mereset password user ke default
   async resetPassword(id: string){
@@ -258,10 +266,10 @@ export class UserService {
       }
     }
     catch(error){
-      return {
-        success: error instanceof ConflictException ? 409 : 500,
-        message: error.message || 'Terjadi kesalahan saat mereset password',
-      };
+      throw new HttpException(
+        error.message || 'Terjadi kesalahan saat mengubah password',
+        error instanceof ConflictException ? HttpStatus.CONFLICT : HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
@@ -271,11 +279,5 @@ export class UserService {
       where: { email },
       relations: { role: true }
     });
-  }
-
-  async getProfile(id: string){
-    return this.userRepository.findOne({
-      where: { id }
-    })
   }
 }

@@ -62,13 +62,9 @@ export class Product {
     })
     deletedAt: Date;
 
-    @ManyToOne(() => Category, (category) => category.id)
+    @ManyToOne(() => Category, (category) => category.product)
     @JoinColumn({ name: 'id_category', referencedColumnName: 'id' })
     category: Category
-
-    @JoinColumn({ name: 'category_name', referencedColumnName: 'category_name' })
-    @Column({ name: 'category_name', nullable: true})
-    category_name: string;
 
     @OneToMany(() => Order, (order) => order.product )
     orders: Order[];

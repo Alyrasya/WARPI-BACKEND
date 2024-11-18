@@ -16,7 +16,7 @@ export class ProductService {
   ) {}
 
   // Fungsi untuk membuat product
-  async createProduct(data: CreateProductDto){
+  async createProduct(data: CreateProductDto) {
     const category = await this.categoryRepository.findOne({
         where: { id: data.id_category },
     });
@@ -25,31 +25,36 @@ export class ProductService {
         throw new NotFoundException('Kategori Tidak Ditemukan');
     }
 
+    // Periksa apakah produk dengan nama dan kategori yang sama sudah ada
     const existingProduct = await this.productRepository.findOne({
         where: {
             product_name: data.product_name,
             category: { id: data.id_category },
         },
+        relations: ['category'],
     });
 
     if (existingProduct) {
-        throw new ConflictException(`Produk dengan product_name dan kategori tersebut sudah ada`);
+        throw new ConflictException(
+            `Produk dengan nama '${data.product_name}' pada kategori '${category.category_name}' sudah ada`
+        );
     }
 
     try {
+        // Buat produk baru dengan menyetel relasi kategori
         const newProduct = this.productRepository.create({
             ...data,
             stock: 0,
-            category_name: category.category_name,
+            category: category,
         });
 
         const product = await this.productRepository.save(newProduct);
         return product;
-    } 
-    catch{
-      throw new InternalServerErrorException('Terjadi kesalahan pada server');
+    } catch {
+        throw new InternalServerErrorException('Terjadi kesalahan pada server');
     }
   }
+
 
   // Fungsi untuk mengedit product
   async updateProduct(id: string, data: UpdateProductDto){

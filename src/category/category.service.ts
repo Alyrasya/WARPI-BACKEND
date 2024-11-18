@@ -82,7 +82,7 @@ export class CategoryService {
         const products = await this.productRepository.find({ where: { category: { id: id_category } } });
 
         for (const product of products) {
-            product.category_name = newCategoryName;
+            product.category.category_name = newCategoryName;
             await this.productRepository.save(product);
         }
 
@@ -136,52 +136,54 @@ export class CategoryService {
   }
   
   //Fungsi untuk mendapatkan produk berdasarkan ID kategori
-  async detailCategory(id: string, page: number, page_size: number, product_name?: string){
+  async detailCategory(id: string, page: number, page_size: number, product_name?: string) {
+      // Periksa keberadaan kategori
+      const category = await this.categoryRepository.findOne({
+          where: { id },
+      });
 
-    const category = await this.categoryRepository.findOne({
-        where: { id },
-        relations: ['product'],
-    });
+      if (!category) {
+          throw new NotFoundException('Kategori tidak ditemukan');
+      }
 
-    if (!category) {
-        throw new NotFoundException('Kategori tidak ditemukan');
-    }
+      // Query produk berdasarkan kategori
+      const query = this.productRepository
+          .createQueryBuilder('product')
+          .select([
+              'product.id',
+              'product.product_name',
+              'category.category_name',
+              'product.stock',
+              'product.price',
+              'product.product_photo',
+              'product.status_product',
+              'product.createdAt',
+          ])
+          .innerJoin('product.category', 'category')
+          .where('category.id = :id', { id })
+          .andWhere('product.deletedAt IS NULL');
 
-    const query = this.productRepository
-        .createQueryBuilder('product')
-        .select([
-            'product.id',
-            'product.product_name',
-            'category.category_name',
-            'product.stock',
-            'product.price',
-            'product.product_photo',
-            'product.status_product',
-            'product.createdAt'
-        ])
-        .innerJoin('product.category', 'category')
-        .where('category.id = :id', { id });
+      // Filter berdasarkan nama produk jika disediakan
+      if (product_name) {
+          query.andWhere('product.product_name ILIKE :product_name', { product_name: `%${product_name}%` });
+      }
 
-        if (product_name) {
-          query.where('product.product_name ILIKE :product_name', { product_name: `%${product_name}%` });
-        }
+      // Pagination dan sorting
+      query.skip((page - 1) * page_size).take(page_size).orderBy('product.createdAt', 'ASC');
 
-    query.skip((page - 1) * page_size).take(page_size);
+      const [products, totalCount] = await query.getManyAndCount();
 
-    query.orderBy('product.createdAt', 'ASC');
+      if (totalCount === 0) {
+          throw new NotFoundException(
+              product_name
+                  ? `Produk dengan nama '${product_name}' tidak ditemukan`
+                  : 'Produk tidak ditemukan',
+          );
+      }
 
-    const [products, totalCount] = await query.getManyAndCount();
-
-    if (totalCount === 0) {
-      throw new NotFoundException(
-          product_name
-              ? `Product dengan nama '${product_name}' tidak ditemukan`
-              : `Product tidak ditemukan`
-      );
-    }
-
-    return { data: products, totalCount };
+      return { data: products, totalCount };
   }
+
 
   //Fungsi untuk menghitung total kategori
   async countCategories(){
