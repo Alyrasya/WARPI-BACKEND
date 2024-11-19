@@ -19,7 +19,7 @@ export class ProductController {
       filename: (req, file, cb) => {
         const uniqueName = `${Date.now()}${extname(file.originalname)}`;
         cb(null, uniqueName);
-      },
+      },  
     }),
     fileFilter: (req, file, cb) => {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
@@ -95,7 +95,7 @@ export class ProductController {
           console.error('Terjadi kesalahan saat memperbarui produk:', error.message);
           throw new HttpException(`Gagal memperbarui produk: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
       }
-  }
+  } 
 
   @Get('getAll')
   async getAllProducts(
