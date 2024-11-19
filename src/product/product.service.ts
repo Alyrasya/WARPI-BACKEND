@@ -55,7 +55,6 @@ export class ProductService {
     }
   }
 
-
   // Fungsi untuk mengedit product
   async updateProduct(id: string, data: UpdateProductDto){
     try{
@@ -137,43 +136,48 @@ export class ProductService {
   }
   
   // Fungsi untuk mendapatkan seluruh produk
-  async getAllProduct(page: number, page_size: number, product_name?: string, category_name?: string){
+  async getAllProduct(page: number, page_size: number, product_name?: string, category_name?: string) {
     const query = this.productRepository
       .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
       .select([
         'product.id',
         'product.product_name',
         'product.description',
         'product.price',
-        'product.category_name',
+        'category.category_name',
         'product.status_product',
         'product.product_photo',
         'product.stock',
+        'product.createdAt',
       ]);
-    
+  
     if (category_name) {
-      query.where('product.category_name ILIKE :category_name', { category_name: `%${category_name}%` });
+      query.where('category.category_name ILIKE :category_name', { category_name: `%${category_name}%` });
     }
-    
+  
     if (product_name) {
       query.andWhere('product.product_name ILIKE :product_name', { product_name: `%${product_name}%` });
     }
-    
-    query.skip((page - 1) * page_size).take(page_size);
-    
+  
+    query
+      .skip((page - 1) * page_size)
+      .take(page_size)
+      .orderBy('product.createdAt', 'ASC');
+  
     const [products, totalCount] = await query.getManyAndCount();
   
     if (totalCount === 0) {
       throw new NotFoundException(
-        product_name
-          ? `Produk dengan nama '${product_name}' tidak ditemukan`
-          : `Produk tidak ditemukan` 
+        category_name || product_name
+          ? `Produk dengan filter yang diberikan tidak ditemukan`
+          : `Produk tidak ditemukan`
       );
     }
   
     return { data: products, totalCount };
-  }   
-  
+  }  
+      
   //Fungsi untuk menghitung total produk
   async countProducts(){
     return await this.productRepository.count();

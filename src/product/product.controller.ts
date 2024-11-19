@@ -6,6 +6,7 @@ import { diskStorage } from 'multer';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Express } from 'express';
+import { Product } from './entities/product.entity';
 
 @Controller('product')
 export class ProductController {
@@ -98,22 +99,22 @@ export class ProductController {
   }
 
   @Get('getAll')
-  async getAllProducts(
-    @Query('page') page: number,
-    @Query('page_size') page_size: number,
-    @Query('product_name') product_name?: string,
-    @Query('category_name') category_name?: string,
-  ){
-    try {
-      return await this.productService.getAllProduct(page, page_size, product_name, category_name);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      console.error('Kesalahan saat mengambil data produk:', error.message);
-      throw new HttpException('Terjadi kesalahan saat mengambil data produk.', HttpStatus.INTERNAL_SERVER_ERROR);
+async getAllProducts(
+  @Query('page') page: number,
+  @Query('page_size') page_size: number,
+  @Query('product_name') product_name?: string,
+  @Query('category_name') category_name?: string,
+): Promise<{ data: Product[]; totalCount: number }> {
+  try {
+    return await this.productService.getAllProduct(page, page_size, product_name, category_name);
+  } catch (error) {
+    if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      throw error;
     }
+    console.error('Kesalahan saat mengambil data produk:', error.message);
+    throw new HttpException('Terjadi kesalahan saat mengambil data produk.', HttpStatus.INTERNAL_SERVER_ERROR);
   }
+}
 
   @Get('/:id/getById')
   async getByIdProduct(@Param('id', ParseUUIDPipe) id: string) {
