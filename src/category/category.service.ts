@@ -153,6 +153,7 @@ export class CategoryService {
               'product.id',
               'product.product_name',
               'category.category_name',
+              'product.description',
               'product.stock',
               'product.price',
               'product.product_photo',
