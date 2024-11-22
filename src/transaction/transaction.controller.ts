@@ -13,7 +13,6 @@ export class TransactionController {
     if (!transaction) {
       throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
-
     return transaction;
   }
 }
