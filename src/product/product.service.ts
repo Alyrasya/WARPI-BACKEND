@@ -185,10 +185,18 @@ export class ProductService {
         'product.product_photo',
         'product.stock',
         'product.createdAt',
-      ]);
+      ])
+      // Filter status_product active
+      .where('product.status_product = :status_product', {
+        status_product: 'active',
+      })
+      // Filter category dengan status_category active
+      .andWhere('category.status_category = :status_category', {
+        status_category: 'active',
+      });
 
     if (category_name) {
-      query.where('category.category_name ILIKE :category_name', {
+      query.andWhere('category.category_name ILIKE :category_name', {
         category_name: `%${category_name}%`,
       });
     }
