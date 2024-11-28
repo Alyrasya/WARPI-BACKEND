@@ -51,8 +51,4 @@ export class User {
     @ManyToOne(() => Role, role => role.users)
     @JoinColumn({ name: 'id_role', referencedColumnName: 'id' })
     role: Role;
-
-    @JoinColumn({ name: 'role_name', referencedColumnName: 'role_name' })
-    @Column({ name: 'role_name', nullable: true})
-    role_name: string;
 }

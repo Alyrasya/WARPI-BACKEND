@@ -11,7 +11,6 @@ import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Category } from '#/category/entities/category.entity';
-import path from 'path';
 import * as fs from 'fs';
 
 @Injectable()
@@ -148,25 +147,23 @@ export class ProductService {
     }
   }
 
- // Fungsi untuk melihat detail produk dengan relasi ke category
-async getByIdProduct(id: string) {
-  const product = await this.productRepository.findOne({
-    where: { id },
-    relations: ['category'],
-  });
+  // Fungsi untuk melihat detail produk dengan relasi ke category
+  async getByIdProduct(id: string) {
+    const product = await this.productRepository.findOne({
+      where: { id },
+      relations: ['category'],
+    });
 
-  if (!product) {
-    throw new NotFoundException(`Produk dengan ID ${id} tidak ditemukan`);
+    if (!product) {
+      throw new NotFoundException(`Produk dengan ID ${id} tidak ditemukan`);
+    }
+
+    const { category, ...productData } = product;
+    return {
+      ...productData,
+      category_name: category.category_name,
+    };
   }
-
-  const { category, ...productData } = product;
-  return {
-    ...productData,
-    category_name: category.category_name
-  };
-}
-
-
 
   // Fungsi untuk mendapatkan seluruh produk
   async getAllProduct(

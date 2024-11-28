@@ -185,7 +185,6 @@ export class CategoryService {
       return { data: products, totalCount };
   }
 
-
   //Fungsi untuk menghitung total kategori
   async countCategories(){
     return await this.categoryRepository.count();

@@ -25,9 +25,9 @@ export class AuthController {
 
     return {
         status: HttpStatus.OK,
-        access_token: result.access_token,
         requiresPasswordChange: result.requiresPasswordChange,
         message: result.message,
+        access_token: result.access_token,
     };
   }
 }

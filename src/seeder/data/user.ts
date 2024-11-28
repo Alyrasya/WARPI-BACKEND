@@ -10,7 +10,7 @@ export async function generateUserMasterData(): Promise<Partial<User>[]> {
 
     const roleData: Role = {
         id: '3140b0a3-db8e-4384-9abe-be6e3524c5e0',
-        role_name: 'admin' // Misalkan nama role adalah 'Administrator'
+        role_name: 'admin'
     } as Role;
 
     return [
@@ -21,8 +21,7 @@ export async function generateUserMasterData(): Promise<Partial<User>[]> {
             email: 'admin@gmail.com',
             salt: salt,
             status_user: StatusUser.ACTIVE,
-            role: roleData, // Menyertakan data role lengkap
-            role_name: 'admin',
+            role: roleData,
             createdAt: new Date(),
             updatedAt: new Date(),
             deletedAt: null,

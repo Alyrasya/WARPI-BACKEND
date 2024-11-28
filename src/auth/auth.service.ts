@@ -47,10 +47,10 @@ export class AuthService {
         }
 
         return {
-            access_token: token,
-            requiresPasswordChange: false,
             status: 200,
+            requiresPasswordChange: false,
             message: 'Login berhasil',
+            access_token: token,
         };
     }
 }
