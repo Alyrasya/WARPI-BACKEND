@@ -52,7 +52,6 @@ export class UserService {
           password: hash,
           salt,
           status_user: StatusUser.ACTIVE,
-          role_name: role.role_name,
           role,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -96,7 +95,6 @@ export class UserService {
         password: hash,
         salt,
         status_user: StatusUser.ACTIVE,
-        role_name: role.role_name,
         role: role,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -177,7 +175,10 @@ export class UserService {
   // Fungsi untuk menghitung total cashier
   async countCashiers(){
     return await this.userRepository.count({
-      where: { role_name: 'cashier' }
+      where: { 
+        role: { role_name: 'cashier' }
+       },
+       relations: { role: true },
     });
   }
 

@@ -35,13 +35,13 @@ export class CategoryController {
   async editCategory(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
-  ) {
+  ): Promise<Category> {
     try {
-      const editProduct = await this.categoryService.editCategory(
+      const updatedCategory = await this.categoryService.editCategory(
         id,
         updateCategoryDto,
       );
-      return editProduct;
+      return updatedCategory;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw new NotFoundException('Kategori tidak ditemukan');
@@ -49,10 +49,7 @@ export class CategoryController {
       if (error instanceof BadRequestException) {
         throw new BadRequestException(`Data tidak valid: ${error.message}`);
       }
-      console.error(
-        'Terjadi kesalahan saat memperbarui kategori:',
-        error.message,
-      );
+      console.error('Terjadi kesalahan saat memperbarui kategori:', error);
       throw new HttpException(
         `Gagal memperbarui kategori: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -114,9 +111,11 @@ export class CategoryController {
   }
 
   @Get('upload/:image')
-  getImage(@Param('image') imagePath: string, @Res() res:any){
+  getImage(@Param('image') imagePath: string, @Res() res: any) {
     return of(
-      res.sendFile(join(process.cwd(), `/src/product/photo_product/${imagePath}`))
-    )
+      res.sendFile(
+        join(process.cwd(), `/src/product/photo_product/${imagePath}`),
+      ),
+    );
   }
 }
