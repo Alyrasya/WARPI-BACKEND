@@ -44,6 +44,10 @@ export class Product {
     })
     status_product: StatusProduct;
 
+    @ManyToOne(() => Category, (category) => category.products)
+    @JoinColumn({ name: 'id_category', referencedColumnName: 'id' })
+    category: Category
+
     @CreateDateColumn({
         type: 'timestamp with time zone',
         nullable: false,
@@ -62,10 +66,6 @@ export class Product {
     })
     deletedAt: Date;
 
-    @ManyToOne(() => Category, (category) => category.product)
-    @JoinColumn({ name: 'id_category', referencedColumnName: 'id' })
-    category: Category
-
-    @OneToMany(() => Order, (order) => order.product )
-    orders: Order[];
+    @OneToMany(() => Order, order => order.product)
+    order: Order[];
 }

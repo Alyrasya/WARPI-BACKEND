@@ -1,10 +1,12 @@
+import { Cart } from "#/cart/entities/cart.entity";
 import { Role } from "#/role/entities/role.entity";
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Transaction } from "#/transaction/entities/transaction.entity";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 export enum StatusUser {
     ACTIVE = 'active',
     INACTIVE = 'inactive',
-  }
+}
 
 @Entity()
 export class User {
@@ -23,12 +25,16 @@ export class User {
     @Column({ type: 'varchar', length: 255, nullable: true })
     salt: string;
 
-    @Column({ 
+    @Column({
         type: 'enum',
         enum: StatusUser,
         default: StatusUser.ACTIVE,
     })
     status_user: StatusUser;
+
+    @ManyToOne(() => Role, role => role.user)
+    @JoinColumn({ name: 'id_role', referencedColumnName: 'id' })
+    role: Role;
 
     @CreateDateColumn({
         type: 'timestamp with time zone',
@@ -48,7 +54,12 @@ export class User {
     })
     deletedAt: Date;
 
-    @ManyToOne(() => Role, role => role.users)
-    @JoinColumn({ name: 'id_role', referencedColumnName: 'id' })
-    role: Role;
+    @OneToOne(() => Cart, cart => cart.user)
+    cart: Cart;
+
+    @OneToMany(() => Transaction, (transaction) => transaction.customer)
+    customerTransactions: Transaction[];
+
+    @OneToMany(() => Transaction, (transaction) => transaction.cashier)
+    cashierTransactions: Transaction[];
 }

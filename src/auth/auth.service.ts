@@ -20,11 +20,6 @@ export class AuthService {
             throw new NotFoundException(`User dengan email ${email} tidak ditemukan`);
         }
 
-        // Cek status user
-        if (user.status_user !== 'active') {
-            throw new UnauthorizedException('User dalam status inactive');
-        }
-
         // Validasi password
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {

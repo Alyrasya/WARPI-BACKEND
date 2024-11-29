@@ -1,10 +1,14 @@
-import { Order } from "#/order/entities/order.entity";
+import { Cart } from "#/cart/entities/cart.entity";
+import { PaymentMethod } from "#/payment_method/entities/payment_method.entity";
+import { User } from "#/user/entities/user.entity";
 import { 
     Column,
     CreateDateColumn,
     DeleteDateColumn, 
     Entity, 
-    OneToMany, 
+    JoinColumn, 
+    ManyToOne, 
+    OneToOne, 
     PrimaryGeneratedColumn, 
     UpdateDateColumn 
 } from "typeorm";
@@ -43,6 +47,22 @@ export class Transaction {
     })
     payment_status: string;
 
+    @ManyToOne(() => PaymentMethod, paymentMethod => paymentMethod.transaction) 
+    @JoinColumn({ name: 'id_method', referencedColumnName: 'id' })
+    paymentMethod: PaymentMethod;
+
+    @OneToOne(() => Cart) 
+    @JoinColumn({ name: 'id_cart', referencedColumnName: 'id' }) 
+    cart: Cart;
+
+    @ManyToOne(() => User, (user) => user.customerTransactions)
+    @JoinColumn({ name: 'id_customer' })
+    customer: User;
+
+    @ManyToOne(() => User, (user) => user.cashierTransactions)
+    @JoinColumn({ name: 'id_cashier' })
+    cashier: User;
+
     @CreateDateColumn({
         type: 'timestamp with time zone',
         nullable: false,
@@ -60,7 +80,4 @@ export class Transaction {
         nullable: true,
     })
     deletedAt: Date;
-
-    @OneToMany(() => Order, (order) => order.transaction)
-    orders: Order[];
 }

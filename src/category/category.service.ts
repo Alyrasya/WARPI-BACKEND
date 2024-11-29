@@ -163,13 +163,13 @@ export class CategoryService {
 
     const [categories, totalCount] = await query.getManyAndCount();
 
-    if (totalCount === 0) {
-      throw new NotFoundException(
-        category_name
-          ? `Kategori dengan nama '${category_name}' tidak ditemukan`
-          : `Kategori tidak ditemukan`,
-      );
-    }
+    // if (totalCount === 0) {
+    //   throw new NotFoundException(
+    //     category_name
+    //       ? `Kategori dengan nama '${category_name}' tidak ditemukan`
+    //       : `Kategori tidak ditemukan`,
+    //   );
+    // }
 
     return { data: categories, totalCount };
   }
@@ -223,13 +223,13 @@ export class CategoryService {
 
     const [products, totalCount] = await query.getManyAndCount();
 
-    if (totalCount === 0) {
-      throw new NotFoundException(
-        product_name
-          ? `Produk dengan nama '${product_name}' tidak ditemukan`
-          : 'Produk tidak ditemukan',
-      );
-    }
+    // if (totalCount === 0) {
+    //   throw new NotFoundException(
+    //     product_name
+    //       ? `Produk dengan nama '${product_name}' tidak ditemukan`
+    //       : 'Produk tidak ditemukan',
+    //   );
+    // }
 
     return { data: products, totalCount };
   }

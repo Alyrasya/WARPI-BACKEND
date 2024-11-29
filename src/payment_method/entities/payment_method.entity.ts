@@ -1,18 +1,22 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Transaction } from "#/transaction/entities/transaction.entity";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
 export class PaymentMethod {
-    @PrimaryGeneratedColumn('uuid') // Menggunakan UUID sebagai primary key
+    @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column({ type: 'varchar', length: 255 })
-    method_name: string; // Untuk menyimpan nama metode pembayaran
+    method_name: string;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
-    qris_name: string; // Nullable, untuk menyimpan nama QRIS jika ada
+    qris_name: string;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
-    qris_photo: string; // Nullable, untuk menyimpan foto QRIS
+    qris_photo: string;
+
+    @OneToMany(() => Transaction, transaction => transaction.paymentMethod)
+    transaction: Transaction[];
 
     @CreateDateColumn({
         type: 'timestamp with time zone',
