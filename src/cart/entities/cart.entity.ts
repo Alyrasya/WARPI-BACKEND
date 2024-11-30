@@ -1,33 +1,25 @@
-import { Product } from '#/product/entities/product.entity';
+import { Order } from '#/order/entities/order.entity';
+import { Transaction } from '#/transaction/entities/transaction.entity';
+import { User } from '#/user/entities/user.entity';
 import {
-    Column,
     CreateDateColumn, 
     DeleteDateColumn, 
     Entity, 
+    JoinColumn, 
     OneToMany, 
+    OneToOne, 
     PrimaryGeneratedColumn, 
     UpdateDateColumn
 } from 'typeorm';
 
-export enum StatusCategory {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive'
-}
-
 @Entity()
-export class Category {
+export class Cart {
     @PrimaryGeneratedColumn('uuid')
     id: string;
-  
-    @Column({ type: 'varchar', length: 255 })
-    category_name: string;
-  
-    @Column({
-      type: 'enum',
-      enum: StatusCategory,
-      default: StatusCategory.ACTIVE,
-    })
-    status_category: StatusCategory;
+
+    @OneToOne(() => User)
+    @JoinColumn({ name: 'id_customer', referencedColumnName: 'id' })
+    user: User;
   
     @CreateDateColumn({
       type: 'timestamp with time zone',
@@ -46,8 +38,11 @@ export class Category {
       nullable: true,
     })
     deletedAt: Date; 
+    
+    @OneToOne(() => Transaction, transaction => transaction.cart)
+    transaction: Transaction;
 
-    @OneToMany(() => Product, (product) => product.category)
-    products?: Product[];
+    @OneToMany(() => Order, order => order.cart)
+    order: Order[];
 }
 

@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { Role } from '#/role/entities/role.entity';
-import { StatusUser, User } from '#/user/entities/user.entity';
+import { User } from '#/user/entities/user.entity';
 
 // Fungsi untuk menghasilkan data master pengguna dengan password yang sudah di-hash
 export async function generateUserMasterData(): Promise<Partial<User>[]> {
@@ -20,7 +20,6 @@ export async function generateUserMasterData(): Promise<Partial<User>[]> {
             password: hashedPassword,  
             email: 'admin@gmail.com',
             salt: salt,
-            status_user: StatusUser.ACTIVE,
             role: roleData,
             createdAt: new Date(),
             updatedAt: new Date(),

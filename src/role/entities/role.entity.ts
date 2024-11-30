@@ -36,5 +36,5 @@ export class Role {
     deletedAt: Date;
 
     @OneToMany(() => User, user => user.role)
-    users?: User[];
+    user?: User[];
 }

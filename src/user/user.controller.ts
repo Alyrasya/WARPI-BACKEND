@@ -11,14 +11,15 @@ import {
   HttpCode,
   HttpStatus,
   HttpException,
+  Delete,
   BadRequestException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { CreateCashierDto } from './dto/create-cashier.dto';
 import { User } from './entities/user.entity';
-import { UpdateStatusDto } from './dto/update-status.dto';
 import { UpdatePasswordUserDto } from './dto/update-password-user.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
 
 @Controller('user')
 export class UserController {
@@ -43,48 +44,15 @@ export class UserController {
     @Query('usernameOrEmail') usernameOrEmail?: string,
   ): Promise<{ data: User[]; totalCount: number }> {
     try {
-      // Memanggil service untuk mendapatkan semua user dengan role 'cashier'
       return await this.userService.getAllCashier(
         page,
         page_size,
         usernameOrEmail,
       );
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       console.error('Kesalahan saat mengambil data user:', error.message);
       throw new HttpException(
         'Terjadi kesalahan saat mengambil datauser.',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Put(':id/status')
-  async editStatusCashier(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateStatusDto: UpdateStatusDto,
-  ) {
-    try {
-      const editStatus = await this.userService.editStatusCashier(
-        id,
-        updateStatusDto,
-      );
-      return editStatus;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw new NotFoundException('User tidak ditemukan');
-      }
-      if (error instanceof BadRequestException) {
-        throw new BadRequestException(`Data tidak valid: ${error.message}`);
-      }
-      console.error(
-        'Terjadi kesalahan saat memperbarui status:',
-        error.message,
-      );
-      throw new HttpException(
-        `Gagal memperbarui status: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -150,6 +118,35 @@ export class UserController {
         error instanceof HttpException
           ? error.getStatus()
           : HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Put(':id/status')
+  async editStatusCashier(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateStatusDto: UpdateStatusDto,
+  ) {
+    try {
+      const editStatus = await this.userService.editStatusCashier(
+        id,
+        updateStatusDto,
+      );
+      return editStatus;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException('User tidak ditemukan');
+      }
+      if (error instanceof BadRequestException) {
+        throw new BadRequestException(`Data tidak valid: ${error.message}`);
+      }
+      console.error(
+        'Terjadi kesalahan saat memperbarui status:',
+        error.message,
+      );
+      throw new HttpException(
+        `Gagal memperbarui status: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

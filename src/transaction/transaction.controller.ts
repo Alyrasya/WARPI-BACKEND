@@ -3,8 +3,9 @@ import { TransactionService } from './transaction.service';
 
 @Controller('transaction')
 export class TransactionController {
-  constructor(private readonly transactionService: TransactionService) {}
+  constructor() {}
 
+<<<<<<< HEAD
   // Endpoint untuk mendapatkan detail transaksi berdasarkan ID transaksi
   @Get(':id/getById')
   async getTransactionById(@Param('id') id: string) {
@@ -15,4 +16,6 @@ export class TransactionController {
     }
     return transaction;
   }
+=======
+>>>>>>> 5e56ead5f9d45582eb8f70a45e03ec4f68ec9a7b
 }
