@@ -94,7 +94,7 @@ import { Cart } from './cart/entities/cart.entity';
           username: configService.get<string>('database.username'),
           password: configService.get<string>('database.password'),
           database: configService.get<string>('database.name'),
-          entities: [Cart],
+          entities: [],
           synchronize: configService.get<string>('env') === 'development',
           autoLoadEntities: true,
           logging: false,
