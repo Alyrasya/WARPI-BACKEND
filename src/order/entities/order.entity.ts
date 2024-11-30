@@ -1,6 +1,5 @@
 import { Cart } from "#/cart/entities/cart.entity";
 import { Product } from "#/product/entities/product.entity";
-import { Transaction } from "#/transaction/entities/transaction.entity";
 import { 
     Column, 
     CreateDateColumn, 
