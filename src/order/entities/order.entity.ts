@@ -31,7 +31,7 @@ export class Order {
     @JoinColumn({ name: 'id_product', referencedColumnName: 'id'})
     product: Product;
 
-    @CreateDateColumn({
+    @CreateDateColumn({     
         type: 'timestamp with time zone',
         nullable: false,
     })

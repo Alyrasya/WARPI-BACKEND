@@ -18,6 +18,7 @@ import { RoleModule } from './role/role.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
+import { Cart } from './cart/entities/cart.entity';
 
 @Module({
   imports: [
@@ -93,7 +94,7 @@ import { CartModule } from './cart/cart.module';
           username: configService.get<string>('database.username'),
           password: configService.get<string>('database.password'),
           database: configService.get<string>('database.name'),
-          entities: [],
+          entities: [Cart],
           synchronize: configService.get<string>('env') === 'development',
           autoLoadEntities: true,
           logging: false,
