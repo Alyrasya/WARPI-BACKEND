@@ -83,9 +83,9 @@ export class UserService {
         updatedAt: new Date(),
       });
   
-      await this.cartRepository.save(newCart);
+      const savedCart = await this.cartRepository.save(newCart);
 
-      return savedUser;
+      return [savedUser,savedCart];
     } catch {
       throw new InternalServerErrorException('Terjadi kesalahan pada server');
     }
