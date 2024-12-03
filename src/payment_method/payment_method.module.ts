@@ -6,7 +6,7 @@ import { PaymentMethod } from './entities/payment_method.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PaymentMethod]), // Menambahkan entitas PaymentMethod
+    TypeOrmModule.forFeature([PaymentMethod]),
   ],
   controllers: [PaymentMethodController],
   providers: [PaymentMethodService]

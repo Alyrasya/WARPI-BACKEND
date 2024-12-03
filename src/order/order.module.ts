@@ -6,13 +6,15 @@ import { Product } from '#/product/entities/product.entity';
 import { Category } from '#/category/entities/category.entity';
 import { Transaction } from '#/transaction/entities/transaction.entity';
 import { Order } from './entities/order.entity';
+import { Cart } from '#/cart/entities/cart.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([
     Product,
     Category,
     Transaction,
-    Order
+    Order,
+    Cart
   ])],
   controllers: [OrderController],
   providers: [OrderService]
