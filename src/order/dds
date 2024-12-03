@@ -1,0 +1,37 @@
+{
+    "total_price_order": "124546.00",
+    "qty": 1,
+    "cart": {
+        "id": "01e436e5-b597-4f22-bd21-641d37b784ea",
+        "createdAt": "2024-12-03T07:51:59.644Z",
+        "updatedAt": "2024-12-03T07:51:59.644Z",
+        "deletedAt": null,
+        "user": {
+            "id": "19ade11d-9e6a-455c-befc-b067e4cae68f",
+            "username": "silang",
+            "email": "silang@gmail.com",
+            "password": "$2b$10$OV8NiqDHeTDUn1pvntr7M.jEojn6plPgdqzRiyBV98H7RJN3mhaO6",
+            "salt": "$2b$10$OV8NiqDHeTDUn1pvntr7M.",
+            "status_user": "active",
+            "createdAt": "2024-12-03T07:51:59.630Z",
+            "updatedAt": "2024-12-03T07:51:59.630Z",
+            "deletedAt": null
+        }
+    },
+    "product": {
+        "id": "ec3fe94a-7148-4d3b-8fdf-84e7ba210542",
+        "product_name": "indomiegoreng",
+        "description": "makanan enak",
+        "price": "124546.00",
+        "stock": 3,
+        "product_photo": "sde23eefewfwe234r23423e",
+        "status_product": "active",
+        "createdAt": "2024-11-18T09:09:35.070Z",
+        "updatedAt": "2024-12-03T07:54:23.046Z",
+        "deletedAt": null
+    },
+    "id": "8f1dc685-acaf-4049-ba7b-3054f2e1a5b7",
+    "createdAt": "2024-12-03T07:55:54.535Z",
+    "updatedAt": "2024-12-03T07:55:54.535Z",
+    "deletedAt": null
+}
