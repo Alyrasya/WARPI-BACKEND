@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
-  // @UseGuards(JwtAuthGuard) // Melindungi endpoint dengan JWT Guard
+  @UseGuards(JwtAuthGuard) // Melindungi endpoint dengan JWT Guard
   @Post(':id_user')
   async createTransaction(
     @Param('id_user') id_user: string,

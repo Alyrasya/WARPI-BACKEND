@@ -8,10 +8,11 @@ import { User } from '#/user/entities/user.entity';
 
 @Injectable()
 export class TransactionService {
-  userRepository: any;
   constructor(
     @InjectRepository(Transaction)
     private readonly transactionRepository: Repository<Transaction>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async countPaidTransactions(){
@@ -59,52 +60,68 @@ export class TransactionService {
 
 
   async createTransaction(id_user: string, username: string): Promise<Transaction> {
-    // Cari user berdasarkan id_user
     const user = await this.userRepository.findOne({
-      where: { id: id_user },
-      relations: ['cart', 'cart.order'],
+        where: { id: id_user },
+        relations: ['cart', 'cart.order'],
     });
 
     if (!user) {
-      throw new NotFoundException('User tidak ditemukan');
+        throw new NotFoundException('User tidak ditemukan');
     }
 
     const cart = user.cart;
     if (!cart || !cart.order || cart.order.length === 0) {
-      throw new BadRequestException('Cart kosong atau tidak valid');
+        throw new BadRequestException('Cart kosong atau tidak valid');
     }
 
     // Hitung total_price_transaction dari total_price_order dalam cart
     const totalPriceTransaction = cart.order.reduce(
-      (total, order) => total + order.total_price_order,
-      0,
+        (total, order) => {
+            const price = parseFloat(order.total_price_order.toString()); // Pastikan ini angka
+            if (isNaN(price)) {
+                throw new BadRequestException(`Total price order tidak valid: ${order.total_price_order}`);
+            }
+            return total + price;
+        },
+        0,
     );
 
-    // Buat nomor transaksi (no_order) yang di-reset setiap hari
-    const today = new Date();
-    const datePart = today.toISOString().slice(0, 10).replace(/-/g, ''); // Format: YYYYMMDD
-    const lastTransaction = await this.transactionRepository.findOne({
-      where: {
-        createdAt: today, // Hanya ambil transaksi hari ini
-      },
-      order: { createdAt: 'DESC' }, // Urutkan berdasarkan waktu terbaru
-    });
-    const lastOrderNumber = String(lastTransaction?.no_order || '').split('-')[1] || '0';
-    const nextOrderNumber = Number(`${datePart}${String(Number(lastOrderNumber) + 1).padStart(4, '0')}`);
+    // Debug totalPriceTransaction
+    console.log('Total Price Transaction:', totalPriceTransaction);
 
-    // Buat entitas transaksi baru
+    // Ambil transaksi terakhir
+    const [lastTransaction] = await this.transactionRepository.find({
+        order: { no_order: 'DESC' },
+        take: 1,
+    });
+
+    const lastOrderNumber = lastTransaction?.no_order || 0;
+    const nextOrderNumber = lastOrderNumber + 1;
+
+    // Validasi nilai sebelum membuat entitas
+    if (isNaN(totalPriceTransaction) || isNaN(nextOrderNumber)) {
+        throw new BadRequestException('Nilai transaksi tidak valid');
+    }
+
     const transaction = this.transactionRepository.create({
-      no_order: nextOrderNumber,
-      cart: cart,
-      customer: user,
-      total_price_transaction: totalPriceTransaction,
-      payment_status: 'unpaid',
-      name_order: username, // Gunakan username dari token
+        no_order: nextOrderNumber,
+        cart: cart,
+        customer: user,
+        total_price_transaction: totalPriceTransaction,
+        payment_status: 'unpaid',
+        name_order: username,
     });
 
-    // Simpan transaksi
+    // Debug payload sebelum menyimpan
+    console.log('Transaction payload:', transaction);
+
     const savedTransaction = await this.transactionRepository.save(transaction);
 
     return savedTransaction;
-  }
+}
+
+
+
+
+  
 }
