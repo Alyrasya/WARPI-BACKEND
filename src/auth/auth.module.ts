@@ -9,10 +9,11 @@ import { RoleModule } from '#/role/role.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Role } from '#/role/entities/role.entity';
 import { User } from '#/user/entities/user.entity';
+import { Cart } from '#/cart/entities/cart.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Role, User]),
+    TypeOrmModule.forFeature([Role, User, Cart]),
     UserModule,
     RoleModule,
     PassportModule.register({defaultStrategy: 'jwt'}),

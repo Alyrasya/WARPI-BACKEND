@@ -16,14 +16,17 @@ import * as bcrypt from 'bcrypt';
 import { CreateCashierDto } from './dto/create-cashier.dto';
 import { StatusUser, User } from './entities/user.entity';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { Cart } from '#/cart/entities/cart.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Role)
-    private roleRepository: Repository<Role>,
+    private readonly roleRepository: Repository<Role>,
+    @InjectRepository(Cart) 
+    private readonly cartRepository: Repository<Cart>
   ) {}
 
   // Fungsi untuk generate salt dan hash password
@@ -72,6 +75,16 @@ export class UserService {
       });
 
       const savedUser = await this.userRepository.save(newUser);
+
+      const newCart = this.cartRepository.create({
+        id: uuidv4(),
+        user: savedUser, // Relasi ke user
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+  
+      await this.cartRepository.save(newCart);
+
       return savedUser;
     } catch {
       throw new InternalServerErrorException('Terjadi kesalahan pada server');

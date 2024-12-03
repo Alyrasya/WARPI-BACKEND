@@ -12,6 +12,7 @@ import { Role } from '#/role/entities/role.entity';
 import { Transaction } from '#/transaction/entities/transaction.entity';
 import { TransactionService } from '#/transaction/transaction.service';
 import { Order } from '#/order/entities/order.entity';
+import { Cart } from '#/cart/entities/cart.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([
@@ -20,7 +21,8 @@ import { Order } from '#/order/entities/order.entity';
     User,
     Role,
     Transaction,
-    Order
+    Order,
+    Cart
   ])],
   controllers: [DashboardController],
   providers: [
