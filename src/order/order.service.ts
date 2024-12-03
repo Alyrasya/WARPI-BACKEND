@@ -1,10 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cart } from '#/cart/entities/cart.entity';
 import { Order } from '#/order/entities/order.entity';
 import { Product } from '#/product/entities/product.entity';
-import { async } from 'rxjs/internal/scheduler/async';
 import { User } from '#/user/entities/user.entity';
 
 @Injectable()
@@ -12,10 +10,8 @@ export class OrderService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
-
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
   ) {}
@@ -118,7 +114,7 @@ export class OrderService {
     id_order: string,
     action?: 'increment' | 'decrement',
     qty?: number,
-  ): Promise<any> {
+  ){
     // Cari order berdasarkan id_order
     const order = await this.orderRepository.findOne({
       where: { id: id_order },
@@ -202,7 +198,7 @@ export class OrderService {
     };
   }
 
-  async deleteOrder(id_order: string): Promise<{ message: string }> {
+  async deleteOrder(id_order: string){
     // Cari order berdasarkan id_order
     const order = await this.orderRepository.findOne({
       where: { id: id_order },
@@ -226,6 +222,5 @@ export class OrderService {
   
     return { message: `Order dengan id ${id_order} berhasil dihapus` };
   }
-  
 }
 

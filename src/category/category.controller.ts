@@ -8,18 +8,17 @@ import {
   Query,
   ParseUUIDPipe,
   NotFoundException,
-  Res,
   HttpCode,
   HttpStatus,
   HttpException,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Category } from './entities/category.entity';
-import { join } from 'path';
-import { of } from 'rxjs';
+import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 
 @Controller('category')
 export class CategoryController {
@@ -58,6 +57,7 @@ export class CategoryController {
   }
 
   @Get('getAll')
+  @UseGuards(JwtAuthGuard)
   async getAllCategories(
     @Query('page') page: number,
     @Query('page_size') page_size: number,
@@ -108,14 +108,5 @@ export class CategoryController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-  }
-
-  @Get('upload/:image')
-  getImage(@Param('image') imagePath: string, @Res() res: any) {
-    return of(
-      res.sendFile(
-        join(process.cwd(), `/src/product/photo_product/${imagePath}`),
-      ),
-    );
   }
 }

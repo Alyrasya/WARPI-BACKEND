@@ -17,7 +17,6 @@ export enum PaymentStatus{
     Unpaid = 'unpaid',
     Pending = 'pending',
     Paid = 'paid',
-    New = 'new'
 }
 
 @Entity()
@@ -43,7 +42,7 @@ export class Transaction {
     @Column({
         type: 'enum',
         enum: PaymentStatus,
-        default: PaymentStatus.New
+        default: PaymentStatus.Unpaid
     })
     payment_status: string;
 
