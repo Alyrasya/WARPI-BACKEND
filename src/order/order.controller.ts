@@ -14,5 +14,4 @@ export class OrderController {
     const { id_product } = addToCartDto;
     return this.orderService.addToCart(id_user, id_product);
   }
-
 }
