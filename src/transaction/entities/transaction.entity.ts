@@ -35,7 +35,7 @@ export class Transaction {
     cash: number;
 
     @Column({ type: 'varchar', length: 60, nullable: true})
-    orderers_name: string;
+    name_order: string;
 
     @Column({ type: 'int', nullable: true})
     no_order: number;
