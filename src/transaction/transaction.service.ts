@@ -59,10 +59,10 @@ export class TransactionService {
   }
 
 
-  async createTransaction(id_user: string, username: string): Promise<Transaction> {
+  async createTransaction(id_user: string, username: string): Promise<any> {
     const user = await this.userRepository.findOne({
         where: { id: id_user },
-        relations: ['cart', 'cart.order'],
+        relations: ['cart', 'cart.order', 'cart.order.product'],
     });
 
     if (!user) {
@@ -74,20 +74,29 @@ export class TransactionService {
         throw new BadRequestException('Cart kosong atau tidak valid');
     }
 
-    // Hitung total_price_transaction dari total_price_order dalam cart
-    const totalPriceTransaction = cart.order.reduce(
-        (total, order) => {
-            const price = parseFloat(order.total_price_order.toString()); // Pastikan ini angka
-            if (isNaN(price)) {
-                throw new BadRequestException(`Total price order tidak valid: ${order.total_price_order}`);
-            }
-            return total + price;
-        },
-        0,
-    );
+    // Cek apakah keranjang sudah memiliki transaksi
+    const existingTransaction = await this.transactionRepository.findOne({
+        where: { cart: cart },
+    });
 
-    // Debug totalPriceTransaction
-    console.log('Total Price Transaction:', totalPriceTransaction);
+    if (existingTransaction) {
+        throw new BadRequestException('Cart sudah memiliki transaksi, tidak dapat membuat transaksi baru.');
+    }
+
+    const orderDetails = cart.order.map((order) => {
+        const price = parseFloat(order.total_price_order.toString());
+        if (isNaN(price)) {
+            throw new BadRequestException(`Total price order tidak valid: ${order.total_price_order}`);
+        }
+
+        return {
+            id_product: order.product.id,
+            name_product: order.product.name,
+            total_price_order: price,
+        };
+    });
+
+    const totalPriceTransaction = orderDetails.reduce((total, order) => total + order.total_price_order, 0);
 
     // Ambil transaksi terakhir
     const [lastTransaction] = await this.transactionRepository.find({
@@ -95,14 +104,23 @@ export class TransactionService {
         take: 1,
     });
 
-    const lastOrderNumber = lastTransaction?.no_order || 0;
-    const nextOrderNumber = lastOrderNumber + 1;
+    // Tentukan nomor order berikutnya dan validasi unik
+    let nextOrderNumber = (lastTransaction?.no_order || 0) + 1;
+    let isUnique = false;
 
-    // Validasi nilai sebelum membuat entitas
-    if (isNaN(totalPriceTransaction) || isNaN(nextOrderNumber)) {
-        throw new BadRequestException('Nilai transaksi tidak valid');
+    while (!isUnique) {
+        const duplicateTransaction = await this.transactionRepository.findOne({
+            where: { no_order: nextOrderNumber },
+        });
+
+        if (!duplicateTransaction) {
+            isUnique = true;
+        } else {
+            nextOrderNumber++;
+        }
     }
 
+    // Buat entitas transaksi baru
     const transaction = this.transactionRepository.create({
         no_order: nextOrderNumber,
         cart: cart,
@@ -112,13 +130,18 @@ export class TransactionService {
         name_order: username,
     });
 
-    // Debug payload sebelum menyimpan
+    // Debug payload
     console.log('Transaction payload:', transaction);
 
     const savedTransaction = await this.transactionRepository.save(transaction);
 
-    return savedTransaction;
+    return {
+        transaction: savedTransaction,
+        orderDetails,
+    };
 }
+
+
 
 
 
