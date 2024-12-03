@@ -9,19 +9,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: 'user123', // Ubah sesuai kebutuhan
+      secretOrKey: process.env.JWT_SECRET || 'defaultSecret',
     });
   }
 
   async validate(payload: any) {
-    // Lakukan pengecekan di database apakah user masih valid
-    const user = await this.userService.getUserById(payload.sub);
-
+    const user = await this.userService.getUserId(payload.id);
     if (!user) {
-      throw new UnauthorizedException('User tidak ditemukan');
+      throw new UnauthorizedException('User not found or invalid token');
     }
 
-    // Kembalikan user yang valid
-    return { id: user.id, email: user.email, role_name: user.role.role_name, username: user.username };
+    return {
+      id: user.id,
+      email: user.email,
+      role_name: user.role.role_name,
+      username: user.username,
+    };
   }
 }
