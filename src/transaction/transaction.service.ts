@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Transaction } from '#/transaction/entities/transaction.entity';
 import { Cart } from '#/cart/entities/cart.entity';
 import { User } from '#/user/entities/user.entity';
+import { Order } from '#/order/entities/order.entity';
 
 
 @Injectable()
@@ -13,6 +14,10 @@ export class TransactionService {
     private readonly transactionRepository: Repository<Transaction>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Cart)
+    private readonly cartRepository: Repository<Cart>,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
   ) {}
 
   async countPaidTransactions(){
@@ -58,7 +63,6 @@ export class TransactionService {
     }
   }
 
-
   async createTransaction(id_user: string, username: string): Promise<any> {
     const user = await this.userRepository.findOne({
         where: { id: id_user },
@@ -74,53 +78,37 @@ export class TransactionService {
         throw new BadRequestException('Cart kosong atau tidak valid');
     }
 
-    // Cek apakah keranjang sudah memiliki transaksi
-    const existingTransaction = await this.transactionRepository.findOne({
-        where: { cart: cart },
-    });
-
-    if (existingTransaction) {
-        throw new BadRequestException('Cart sudah memiliki transaksi, tidak dapat membuat transaksi baru.');
-    }
-
-    const orderDetails = cart.order.map((order) => {
-        const price = parseFloat(order.total_price_order.toString());
+    // Hitung total_price_transaction dari total_price_order dalam cart
+    const totalPriceTransaction = cart.order.reduce((total, order) => {
+        const price = parseFloat(order.total_price_order.toString()); // Pastikan ini angka
         if (isNaN(price)) {
             throw new BadRequestException(`Total price order tidak valid: ${order.total_price_order}`);
         }
+        return total + price;
+    }, 0);
 
-        return {
-            id_product: order.product.id,
-            name_product: order.product.name,
-            total_price_order: price,
-        };
-    });
+    // Ambil tanggal hari ini
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // 00:00:00
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59); // 23:59:59
 
-    const totalPriceTransaction = orderDetails.reduce((total, order) => total + order.total_price_order, 0);
-
-    // Ambil transaksi terakhir
-    const [lastTransaction] = await this.transactionRepository.find({
+    // Cari transaksi terakhir untuk hari ini
+    const [lastTransactionToday] = await this.transactionRepository.find({
+        where: {
+            createdAt: Between(startOfDay, endOfDay), // Filter transaksi hari ini
+        },
         order: { no_order: 'DESC' },
         take: 1,
     });
 
-    // Tentukan nomor order berikutnya dan validasi unik
-    let nextOrderNumber = (lastTransaction?.no_order || 0) + 1;
-    let isUnique = false;
+    const lastOrderNumberToday = lastTransactionToday?.no_order || 0; // Gunakan 0 jika tidak ada
+    const nextOrderNumber = lastOrderNumberToday + 1;
 
-    while (!isUnique) {
-        const duplicateTransaction = await this.transactionRepository.findOne({
-            where: { no_order: nextOrderNumber },
-        });
-
-        if (!duplicateTransaction) {
-            isUnique = true;
-        } else {
-            nextOrderNumber++;
-        }
+    // Validasi nilai sebelum membuat entitas
+    if (isNaN(totalPriceTransaction) || isNaN(nextOrderNumber)) {
+        throw new BadRequestException('Nilai transaksi tidak valid');
     }
 
-    // Buat entitas transaksi baru
     const transaction = this.transactionRepository.create({
         no_order: nextOrderNumber,
         cart: cart,
@@ -130,21 +118,28 @@ export class TransactionService {
         name_order: username,
     });
 
-    // Debug payload
-    console.log('Transaction payload:', transaction);
-
     const savedTransaction = await this.transactionRepository.save(transaction);
 
-    return {
-        transaction: savedTransaction,
-        orderDetails,
+    // Kosongkan cart user
+    await this.orderRepository.remove(cart.order);
+    await this.cartRepository.save(cart); // Simpan perubahan cart
+
+    // Membuat response detail transaksi
+    const response = {
+        id_transaction: savedTransaction.id,
+        no_order: savedTransaction.no_order,
+        total_price_transaction: savedTransaction.total_price_transaction,
+        payment_status: savedTransaction.payment_status,
+        customer: savedTransaction.name_order,
+        orders: cart.order.map((order) => ({
+            id_order: order.id,
+            id_product: order.product.id,
+            product_name: order.product.product_name,
+            qty: order.qty,
+            total_price_order: order.total_price_order,
+        })),
     };
-}
 
-
-
-
-
-
-  
-}
+    return response;
+  }
+}  
