@@ -7,11 +7,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
-  @UseGuards(JwtAuthGuard) // Melindungi endpoint dengan JWT Guard
-  @Post(':id_user')
+  @UseGuards(JwtAuthGuard)
+  @Post('create/:id_user')
   async createTransaction(
     @Param('id_user') id_user: string,
-    @Req() req: any, // Mendapatkan request object
+    @Req() req: any,
   ): Promise<Transaction> {
     // Mengambil username dari payload token
     const username = req.user?.username;
@@ -20,7 +20,6 @@ export class TransactionController {
       throw new Error('Username tidak ditemukan dalam token.');
     }
 
-    // Panggil service untuk membuat transaksi
     return await this.transactionService.createTransaction(id_user, username);
   }
 }

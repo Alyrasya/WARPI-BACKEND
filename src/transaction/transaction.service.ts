@@ -4,7 +4,7 @@ import { Between, Repository } from 'typeorm';
 import { Transaction } from '#/transaction/entities/transaction.entity';
 import { Cart } from '#/cart/entities/cart.entity';
 import { User } from '#/user/entities/user.entity';
-import { Order } from '#/order/entities/order.entity';
+import { Order } from '#/order/entities/order.entity';;
 
 
 @Injectable()
@@ -122,7 +122,6 @@ export class TransactionService {
 
     // Kosongkan cart user
     await this.orderRepository.remove(cart.order);
-    cart.order = [];
     await this.cartRepository.save(cart); // Simpan perubahan cart
 
     // Membuat response detail transaksi

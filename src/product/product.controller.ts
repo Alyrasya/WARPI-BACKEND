@@ -24,7 +24,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Express } from 'express';
 import { Product } from './entities/product.entity';
-import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 
 @Controller('product')
 export class ProductController {
