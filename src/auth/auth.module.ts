@@ -1,30 +1,27 @@
 import { Module } from '@nestjs/common';
-import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { UserService } from '../user/user.service';
-import { UserModule } from '../user/user.module';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
-import { RoleModule } from '#/role/role.module';
+import { AuthService } from './auth.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Role } from '#/role/entities/role.entity';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { User } from '#/user/entities/user.entity';
-import { Cart } from '#/cart/entities/cart.entity';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { UserModule } from '#/user/user.module';
+import { JwtStrategy } from './jwt.strategy';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Role, User, Cart]),
-    UserModule,
-    RoleModule,
-    PassportModule.register({defaultStrategy: 'jwt'}),
-    JwtModule.register({
-      global: true,
-      secret: 'user123', // Ganti dengan secret key Anda
-      signOptions: { expiresIn: '1d' },
+    TypeOrmModule.forFeature([User, Role]),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    JwtModule.register({ 
+      secret: 'secrettoken1234',
+      signOptions: { expiresIn: '7d' },
     }),
+    UserModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, UserService],
-  exports: [AuthService]
+  providers: [AuthService, JwtAuthGuard, JwtStrategy],
+  exports: [AuthService, JwtAuthGuard]
 })
-export class AuthModule {}
+export class AuthModule { }

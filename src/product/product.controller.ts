@@ -1,5 +1,26 @@
+<<<<<<< HEAD
 
 import { BadRequestException, Body, Controller, Get, HttpCode, HttpException, HttpStatus, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+=======
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+>>>>>>> fb61dda70eb5636874b578e462c08d529f6a8a74
 import { ProductService } from './product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
@@ -8,6 +29,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Express } from 'express';
 import { Product } from './entities/product.entity';
+import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 
 @Controller('product')
 export class ProductController {

@@ -328,4 +328,14 @@ export class UserService {
      );
     }
   }
+
+  async getUserId(id: string) {
+    const user = await this.userRepository.findOne({
+      where: {
+        id,
+      },
+      relations: { role: true },
+    });
+    return user;
+  }
 }
