@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-import { BadRequestException, Body, Controller, Get, HttpCode, HttpException, HttpStatus, NotFoundException, Param, ParseUUIDPipe, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
-=======
 import {
   BadRequestException,
   Body,
@@ -20,7 +16,6 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
->>>>>>> fb61dda70eb5636874b578e462c08d529f6a8a74
 import { ProductService } from './product.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';

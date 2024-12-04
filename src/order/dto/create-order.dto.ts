@@ -21,7 +21,3 @@ export class CreateOrderDto {
   @Type(() => OrderProductDto)
   products: OrderProductDto[];
 }
-<<<<<<< HEAD
-                                    
-=======
->>>>>>> fb61dda70eb5636874b578e462c08d529f6a8a74

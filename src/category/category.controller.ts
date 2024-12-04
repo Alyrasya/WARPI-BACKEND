@@ -57,7 +57,7 @@ export class CategoryController {
   }
 
   @Get('getAll')
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   async getAllCategories(
     @Query('page') page: number,
     @Query('page_size') page_size: number,
