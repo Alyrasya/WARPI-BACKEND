@@ -202,5 +202,11 @@ export class TransactionService {
     return {
         transaction: updatedTransaction,
     };
-  }
+}
+async getAllTransactions(): Promise<Transaction[]> {
+  return await this.transactionRepository.find({
+    relations: ['paymentMethod', 'cart', 'cart.user', 'cashier', 'customer'],
+    order: { createdAt: 'DESC' }, // Mengurutkan berdasarkan tanggal transaksi terbaru
+  });
+}
 }
