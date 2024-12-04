@@ -1,4 +1,4 @@
-import { Controller, Post, Param, UseGuards, Req, Put, Body } from '@nestjs/common';
+import { Controller, Post, Param, UseGuards, Req, Put, Body, Get } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { Transaction } from './entities/transaction.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -42,5 +42,16 @@ export class TransactionController {
           message: 'Transaction updated successfully',
           data: updatedTransaction,
       };
+      
   }
+  // @UseGuards(JwtAuthGuard) // Melindungi endpoint dengan JWT Guard
+  @Get('history')
+  async getAllTransactions() {
+    const transactions = await this.transactionService.getAllTransactions();
+    return {
+      message: 'Transaction history fetched successfully',
+      data: transactions,
+    };
+  }
+
 }
