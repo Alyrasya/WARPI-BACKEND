@@ -44,17 +44,16 @@ export class TransactionController {
     @Param('id_user') id_user: string,
     @Body() editTransactionDto: EditTransactionDto,
   ) {
-    const updatedTransactionData = await this.transactionService.editTransaction(
-        id_transaction,
-        id_user,
-        editTransactionDto.cash ?? null,
-        editTransactionDto.action,
-        editTransactionDto.id_method,
-    );
-
-    return {
-        message: 'Transaction updated successfully',
-        data: updatedTransactionData,
-    };
+      const updatedTransaction = await this.transactionService.editTransaction(
+          id_transaction,
+          id_cashier,  // Menggunakan id_cashier dari parameter
+          editTransactionDto.cash ?? null,
+          editTransactionDto.action,
+          editTransactionDto.id_method,  // Menggunakan id_method dari body
+      );
+      return {
+          message: 'Transaction updated successfully',
+          data: updatedTransaction,
+      };
   }
 }

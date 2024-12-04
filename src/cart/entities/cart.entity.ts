@@ -39,7 +39,7 @@ export class Cart {
     })
     deletedAt: Date; 
     
-    @OneToOne(() => Transaction, transaction => transaction.cart)
+    @OneToMany(() => Transaction, transaction => transaction.cart)
     transaction: Transaction;
 
     @OneToMany(() => Order, order => order.cart)
