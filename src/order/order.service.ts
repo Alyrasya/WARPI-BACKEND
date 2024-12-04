@@ -18,10 +18,9 @@ export class OrderService {
   ) {}
 
   async addToCart(id_user: string, id_product: string[]) {
-    // Cek apakah user dengan id_user ada
     const user = await this.userRepository.findOne({
       where: { id: id_user },
-      relations: ['cart'], // Pastikan relasi dengan cart sudah diatur
+      relations: ['cart'],
     });
 
     if (!user) {

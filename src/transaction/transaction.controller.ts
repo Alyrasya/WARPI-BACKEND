@@ -1,5 +1,6 @@
-import { Controller, Post, Param, UseGuards, Req, Put, Body, InternalServerErrorException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Param, UseGuards, Req, Put, Body } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
+import { Transaction } from './entities/transaction.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EditTransactionDto } from './dto/edit-transaction.dto';
 
@@ -8,41 +9,26 @@ export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post('create/:id_user')
+  @Post(':id_user')
   async createTransaction(
     @Param('id_user') id_user: string,
     @Req() req: any,
-  ) {
-    // Mengambil username dari payload token
+  ): Promise<Transaction> {
     const username = req.user?.username;
 
     if (!username) {
-      throw new InternalServerErrorException('Username tidak ditemukan dalam token.');
+      throw new Error('Username tidak ditemukan dalam token.');
     }
 
-    try {
-      // Memanggil service untuk membuat transaksi
-      const result = await this.transactionService.createTransaction(id_user, username);
-      return result;
-    } catch (error) {
-      console.error('Error saat membuat transaksi:', error);
-
-      // Berikan informasi tambahan di sini jika diperlukan
-      if (error instanceof NotFoundException) {
-        throw new NotFoundException(error.message);
-      } else if (error instanceof BadRequestException) {
-        throw new BadRequestException(error.message);
-      } else {
-        throw new InternalServerErrorException('Gagal membuat transaksi.');
-      }
-    }
+    // Panggil service untuk membuat transaksi
+    return await this.transactionService.createTransaction(id_user, username);
   }
 
   @Put('edit/:id_transaction/:id_user')
   async editTransaction(
-    @Param('id_transaction') id_transaction: string,
-    @Param('id_user') id_user: string,
-    @Body() editTransactionDto: EditTransactionDto,
+      @Param('id_transaction') id_transaction: string,
+      @Param('id_user') id_user: string,
+      @Body() editTransactionDto: EditTransactionDto,
   ) {
       const updatedTransaction = await this.transactionService.editTransaction(
           id_transaction,
