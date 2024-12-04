@@ -118,4 +118,10 @@ export class CategoryController {
     const filePath = join(process.cwd(), 'src', 'product', 'photo_product', imagePath);
     return res.sendFile(filePath);
   }
+
+  @Get('upload/:image')
+  getImage(@Param('image') imagePath: string, @Res() res: any) {
+    const filePath = join(process.cwd(), 'src', 'product', 'photo_product', imagePath);
+    return res.sendFile(filePath);
+  }
 }

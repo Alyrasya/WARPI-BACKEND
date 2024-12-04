@@ -37,4 +37,5 @@ export class Role {
 
     @OneToMany(() => User, user => user.role)
     user?: User[];
+  static Cashier: Role;
 }

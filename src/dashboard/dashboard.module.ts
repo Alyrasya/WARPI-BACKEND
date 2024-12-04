@@ -13,6 +13,7 @@ import { Transaction } from '#/transaction/entities/transaction.entity';
 import { TransactionService } from '#/transaction/transaction.service';
 import { Order } from '#/order/entities/order.entity';
 import { Cart } from '#/cart/entities/cart.entity';
+import { PaymentMethod } from '#/payment_method/entities/payment_method.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([
@@ -22,7 +23,8 @@ import { Cart } from '#/cart/entities/cart.entity';
     Role,
     Transaction,
     Order,
-    Cart
+    Cart,
+    PaymentMethod,
   ])],
   controllers: [DashboardController],
   providers: [
