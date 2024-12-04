@@ -13,13 +13,15 @@ import {
   HttpException,
   BadRequestException,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Category } from './entities/category.entity';
 import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
-
+import { of } from 'rxjs';
+import { join } from 'path';
 @Controller('category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
@@ -79,6 +81,11 @@ export class CategoryController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+  @Get ('upload/:image')
+  getImage(@Param('image')imagePath: string,@Res() res: any){
+    const filePath = join(process.cwd(),'src', 'product', 'photo_product', imagePath);
+    return res.sendFile(filePath);
   }
 
   @Get(':id/detail')
