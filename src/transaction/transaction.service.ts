@@ -34,12 +34,10 @@ export class TransactionService {
 
   async countTotalMonthlyIncome(){
     try {
-      // Mendapatkan bulan dan tahun saat ini
       const currentDate = new Date();
-      const currentMonth = currentDate.getMonth() + 1; // Bulan dimulai dari 0, jadi perlu +1
+      const currentMonth = currentDate.getMonth() + 1;
       const currentYear = currentDate.getFullYear();
 
-      // Mendapatkan total dari transaksi yang berstatus "paid" untuk bulan dan tahun saat ini
       const result = await this.transactionRepository
         .createQueryBuilder('transaction')
         .select('SUM(transaction.total_price_transaction)', 'total')
@@ -59,10 +57,9 @@ export class TransactionService {
       const result = await this.transactionRepository
         .createQueryBuilder('transaction')
         .select('SUM(transaction.total_price_transaction)', 'total')
-        .where('transaction.payment_status = :status', { status: 'paid' }) // Parameter fixed
+        .where('transaction.payment_status = :status', { status: 'paid' })
         .getRawOne();
 
-      // Jika tidak ada transaksi, atau totalnya null, kembalikan 0
       return result?.total ? parseFloat(result.total) : 0;
     } catch (error) {
       throw new BadRequestException('Error calculating total income');
@@ -84,33 +81,29 @@ export class TransactionService {
         throw new BadRequestException('Cart kosong atau tidak valid');
     }
 
-    // Hitung total_price_transaction dari total_price_order dalam cart
     const totalPriceTransaction = cart.order.reduce((total, order) => {
-        const price = parseFloat(order.total_price_order.toString()); // Pastikan ini angka
+        const price = parseFloat(order.total_price_order.toString());
         if (isNaN(price)) {
             throw new BadRequestException(`Total price order tidak valid: ${order.total_price_order}`);
         }
         return total + price;
     }, 0);
 
-    // Ambil tanggal hari ini
     const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // 00:00:00
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59); // 23:59:59
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
-    // Cari transaksi terakhir untuk hari ini
     const [lastTransactionToday] = await this.transactionRepository.find({
         where: {
-            createdAt: Between(startOfDay, endOfDay), // Filter transaksi hari ini
+            createdAt: Between(startOfDay, endOfDay),
         },
         order: { no_order: 'DESC' },
         take: 1,
     });
 
-    const lastOrderNumberToday = lastTransactionToday?.no_order || 0; // Gunakan 0 jika tidak ada
+    const lastOrderNumberToday = lastTransactionToday?.no_order || 0;
     const nextOrderNumber = lastOrderNumberToday + 1;
 
-    // Validasi nilai sebelum membuat entitas
     if (isNaN(totalPriceTransaction) || isNaN(nextOrderNumber)) {
         throw new BadRequestException('Nilai transaksi tidak valid');
     }
@@ -126,11 +119,9 @@ export class TransactionService {
 
     const savedTransaction = await this.transactionRepository.save(transaction);
 
-    // Kosongkan cart user
     await this.orderRepository.remove(cart.order);
-    await this.cartRepository.save(cart); // Simpan perubahan cart
+    await this.cartRepository.save(cart);
 
-    // Membuat response detail transaksi
     const response = {
         id_transaction: savedTransaction.id,
         no_order: savedTransaction.no_order,
@@ -156,44 +147,37 @@ export class TransactionService {
     action: 'paid' | 'pending',
     id_method: string,
 ) {
-    // Fetch the transaction by ID
     const transaction = await this.transactionRepository.findOne({
         where: { id: id_transaction },
-        relations: ['paymentMethod', 'cashier', 'cart.user'], // Include cart and user in relations
+        relations: ['paymentMethod', 'cashier', 'cart.user'],
     });
 
     if (!transaction) {
         throw new NotFoundException('Transaction not found');
     }
 
-    // Ensure that the cashier is the one updating the transaction
     const cashier = await this.userRepository.findOne({ where: { id: id_cashier } });
     if (!cashier || cashier.role !== Role.Cashier) {
         throw new NotFoundException('Cashier not found or unauthorized');
     }
 
-    // Set the cashier
     transaction.cashier = cashier;
 
-    // Fetch payment method by id_method
     const paymentMethod = await this.paymentMethodRepository.findOne({ where: { id: id_method } });
     if (!paymentMethod) {
         throw new NotFoundException('Payment method not found');
     }
 
-    // Assign the selected payment method to the transaction
     transaction.paymentMethod = paymentMethod;
 
-    // Ensure that the customer associated with the transaction is set correctly
     const cart = transaction.cart;
     if (cart) {
-        const customer = cart.user; // Get the customer from the cart
+        const customer = cart.user;
         if (customer) {
-            transaction.customer = customer; // Set customer to the transaction from the cart
+            transaction.customer = customer;
         }
     }
 
-    // Validate cash amount for cash transactions
     if (paymentMethod.method_name === 'cash') {
         if (cash === null) {
             throw new Error('Cash value must be provided for cash transactions');
@@ -205,23 +189,17 @@ export class TransactionService {
         transaction.change_money = parseFloat((cash - (transaction.total_price_transaction ?? 0)).toFixed(2));
     } else if (paymentMethod.method_name === 'qris') {
         transaction.cash = transaction.total_price_transaction ?? 0;
-        transaction.change_money = 0; // No change for QRIS transactions
+        transaction.change_money = 0;
     } else {
         throw new Error('Unsupported payment method');
     }
 
-    // Update payment status based on action
     transaction.payment_status = action === 'paid' ? PaymentStatus.Paid : PaymentStatus.Pending;
 
-    // Save the updated transaction
     const updatedTransaction = await this.transactionRepository.save(transaction);
 
-   
-    // Return the updated transaction with cashier, cart, and customer information
     return {
         transaction: updatedTransaction,
-        // cashier: cashierData,
-        // cart: cartData,
     };
-``}
+  }
 }
