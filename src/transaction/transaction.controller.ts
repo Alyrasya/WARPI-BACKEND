@@ -31,17 +31,16 @@ export class TransactionController {
       @Param('id_cashier') id_cashier: string,
       @Body() editTransactionDto: EditTransactionDto,
   ) {
-      const updatedTransactionData = await this.transactionService.editTransaction(
+      const updatedTransaction = await this.transactionService.editTransaction(
           id_transaction,
-          id_cashier,  // Get cashier ID from parameter
+          id_cashier,  // Menggunakan id_cashier dari parameter
           editTransactionDto.cash ?? null,
           editTransactionDto.action,
-          editTransactionDto.id_method,  // Get id_method from body
+          editTransactionDto.id_method,  // Menggunakan id_method dari body
       );
-
       return {
           message: 'Transaction updated successfully',
-          data: updatedTransactionData,
+          data: updatedTransaction,
       };
   }
 }

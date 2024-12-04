@@ -50,7 +50,7 @@ export class Transaction {
     @JoinColumn({ name: 'id_method', referencedColumnName: 'id' })
     paymentMethod: PaymentMethod;
 
-    @OneToOne(() => Cart) 
+    @ManyToOne(() => Cart) 
     @JoinColumn({ name: 'id_cart', referencedColumnName: 'id' }) 
     cart: Cart;
 
