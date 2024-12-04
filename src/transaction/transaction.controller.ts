@@ -46,7 +46,7 @@ export class TransactionController {
   ) {
       const updatedTransaction = await this.transactionService.editTransaction(
           id_transaction,
-          id_cashier,  // Menggunakan id_cashier dari parameter
+          id_user,  // Menggunakan id_cashier dari parameter
           editTransactionDto.cash ?? null,
           editTransactionDto.action,
           editTransactionDto.id_method,  // Menggunakan id_method dari body
