@@ -16,7 +16,7 @@ import { User } from '#/user/entities/user.entity';
     Transaction,
     Order,
     Cart,
-    User
+    User,
   ])],
   controllers: [OrderController],
   providers: [OrderService]
