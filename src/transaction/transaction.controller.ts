@@ -1,6 +1,5 @@
-import { Controller, Post, Param, UseGuards, Req, Put, Body } from '@nestjs/common';
+import { Controller, Post, Param, UseGuards, Req, Put, Body, InternalServerErrorException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import { Transaction } from './entities/transaction.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EditTransactionDto } from './dto/edit-transaction.dto';
 
@@ -13,34 +12,49 @@ export class TransactionController {
   async createTransaction(
     @Param('id_user') id_user: string,
     @Req() req: any,
-  ): Promise<Transaction> {
+  ) {
     // Mengambil username dari payload token
     const username = req.user?.username;
 
     if (!username) {
-      throw new Error('Username tidak ditemukan dalam token.');
+      throw new InternalServerErrorException('Username tidak ditemukan dalam token.');
     }
 
-    return await this.transactionService.createTransaction(id_user, username);
+    try {
+      // Memanggil service untuk membuat transaksi
+      const result = await this.transactionService.createTransaction(id_user, username);
+      return result;
+    } catch (error) {
+      console.error('Error saat membuat transaksi:', error);
+
+      // Berikan informasi tambahan di sini jika diperlukan
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException(error.message);
+      } else if (error instanceof BadRequestException) {
+        throw new BadRequestException(error.message);
+      } else {
+        throw new InternalServerErrorException('Gagal membuat transaksi.');
+      }
+    }
   }
 
-  @Put('edit/:id_transaction/:id_cashier')
+  @Put('edit/:id_transaction/:id_user')
   async editTransaction(
-      @Param('id_transaction') id_transaction: string,
-      @Param('id_cashier') id_cashier: string,
-      @Body() editTransactionDto: EditTransactionDto,
+    @Param('id_transaction') id_transaction: string,
+    @Param('id_user') id_user: string,
+    @Body() editTransactionDto: EditTransactionDto,
   ) {
-      const updatedTransactionData = await this.transactionService.editTransaction(
-          id_transaction,
-          id_cashier,  // Get cashier ID from parameter
-          editTransactionDto.cash ?? null,
-          editTransactionDto.action,
-          editTransactionDto.id_method,  // Get id_method from body
-      );
+    const updatedTransactionData = await this.transactionService.editTransaction(
+        id_transaction,
+        id_user,
+        editTransactionDto.cash ?? null,
+        editTransactionDto.action,
+        editTransactionDto.id_method,
+    );
 
-      return {
-          message: 'Transaction updated successfully',
-          data: updatedTransactionData,
-      };
+    return {
+        message: 'Transaction updated successfully',
+        data: updatedTransactionData,
+    };
   }
 }

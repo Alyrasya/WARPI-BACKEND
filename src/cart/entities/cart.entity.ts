@@ -42,7 +42,7 @@ export class Cart {
     @OneToOne(() => Transaction, transaction => transaction.cart)
     transaction: Transaction;
 
-      @OneToMany(() => Order, order => order.cart)
-      order: Order[];
+    @OneToMany(() => Order, order => order.cart)
+    order: Order[];
 }
 

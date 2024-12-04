@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { PaymentStatus, Transaction } from '#/transaction/entities/transaction.entity';
@@ -66,83 +66,109 @@ export class TransactionService {
     }
   }
 
-  async createTransaction(id_user: string, username: string): Promise<any> {
-    const user = await this.userRepository.findOne({
-        where: { id: id_user },
-        relations: ['cart', 'cart.order', 'cart.order.product'],
-    });
+  async createTransaction(id_user: string, username: string) {
+    try {
+        // Find the user by ID and include their cart, order, and related product details
+        const user = await this.userRepository.findOne({
+            where: { id: id_user },
+            relations: ['cart', 'cart.order', 'cart.order.product', 'role'],
+        });
 
-    if (!user) {
-        throw new NotFoundException('User tidak ditemukan');
-    }
-
-    const cart = user.cart;
-    if (!cart || !cart.order || cart.order.length === 0) {
-        throw new BadRequestException('Cart kosong atau tidak valid');
-    }
-
-    const totalPriceTransaction = cart.order.reduce((total, order) => {
-        const price = parseFloat(order.total_price_order.toString());
-        if (isNaN(price)) {
-            throw new BadRequestException(`Total price order tidak valid: ${order.total_price_order}`);
+        if (!user) {
+            throw new NotFoundException('User tidak ditemukan');
         }
-        return total + price;
-    }, 0);
 
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+        // Ensure the user has the 'customer' role before proceeding
+        if (user.role.role_name !== 'customer') {
+            throw new BadRequestException('Hanya pengguna dengan role customer yang bisa melakukan transaksi');
+        }
 
-    const [lastTransactionToday] = await this.transactionRepository.find({
-        where: {
-            createdAt: Between(startOfDay, endOfDay),
-        },
-        order: { no_order: 'DESC' },
-        take: 1,
-    });
+        // Check if the cart exists and has orders
+        const cart = user.cart;
+        if (!cart || !cart.order || cart.order.length === 0) {
+            throw new BadRequestException('Cart kosong atau tidak valid');
+        }
 
-    const lastOrderNumberToday = lastTransactionToday?.no_order || 0;
-    const nextOrderNumber = lastOrderNumberToday + 1;
+        // Ensure the cart is not already associated with a completed transaction
+        const existingTransaction = await this.transactionRepository.findOne({
+            where: { cart: cart, payment_status: 'unpaid' },
+        });
 
-    if (isNaN(totalPriceTransaction) || isNaN(nextOrderNumber)) {
-        throw new BadRequestException('Nilai transaksi tidak valid');
+        if (existingTransaction) {
+            throw new BadRequestException('Cart ini sudah digunakan dalam transaksi yang belum dibayar');
+        }
+
+        // Calculate the total price of the transaction
+        const totalPriceTransaction = cart.order.reduce((total, order) => {
+            const price = parseFloat(order.total_price_order?.toString() ?? '0');
+            if (isNaN(price)) {
+                throw new BadRequestException(`Total price order tidak valid: ${order.total_price_order}`);
+            }
+            return total + price;
+        }, 0);
+
+        if (isNaN(totalPriceTransaction)) {
+            throw new BadRequestException('Nilai transaksi tidak valid');
+        }
+
+        // Get the start and end of the current day
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+        // Find the last transaction for the current day
+        const [lastTransactionToday] = await this.transactionRepository.find({
+            where: { createdAt: Between(startOfDay, endOfDay) },
+            order: { no_order: 'DESC' },
+            take: 1,
+        });
+
+        const lastOrderNumberToday = lastTransactionToday?.no_order || 0;
+        const nextOrderNumber = lastOrderNumberToday + 1;
+
+        // Create the new transaction
+        const transaction = this.transactionRepository.create({
+            no_order: nextOrderNumber,
+            cart: cart,
+            customer: user,
+            total_price_transaction: totalPriceTransaction,
+            payment_status: 'unpaid',
+            name_order: username,
+        });
+
+        const savedTransaction = await this.transactionRepository.save(transaction);
+
+        // Remove all orders from the cart after transaction is created
+        await this.orderRepository.remove(cart.order);
+        cart.order = []; // Clear the cart's order items
+        await this.cartRepository.save(cart);
+
+        // Prepare the response
+        const response = {
+            id_transaction: savedTransaction.id,
+            no_order: savedTransaction.no_order,
+            total_price_transaction: savedTransaction.total_price_transaction,
+            payment_status: savedTransaction.payment_status,
+            customer: savedTransaction.name_order,
+            orders: cart.order.map((order) => ({
+                id_order: order.id,
+                id_product: order.product.id,
+                product_name: order.product.product_name,
+                qty: order.qty,
+                total_price_order: order.total_price_order,
+            })),
+        };
+
+        return response;
+    } catch (error) {
+        console.error('Error detail:', error);
+        throw new InternalServerErrorException('Terjadi kesalahan saat menyimpan transaksi');
     }
-
-    const transaction = this.transactionRepository.create({
-        no_order: nextOrderNumber,
-        cart: cart,
-        customer: user,
-        total_price_transaction: totalPriceTransaction,
-        payment_status: 'unpaid',
-        name_order: username,
-    });
-
-    const savedTransaction = await this.transactionRepository.save(transaction);
-
-    await this.orderRepository.remove(cart.order);
-    await this.cartRepository.save(cart);
-
-    const response = {
-        id_transaction: savedTransaction.id,
-        no_order: savedTransaction.no_order,
-        total_price_transaction: savedTransaction.total_price_transaction,
-        payment_status: savedTransaction.payment_status,
-        customer: savedTransaction.name_order,
-        orders: cart.order.map((order) => ({
-            id_order: order.id,
-            id_product: order.product.id,
-            product_name: order.product.product_name,
-            qty: order.qty,
-            total_price_order: order.total_price_order,
-        })),
-    };
-
-    return response;
   }
 
   async editTransaction(
     id_transaction: string,
-    id_cashier: string,
+    id_user: string, // Changed parameter to id_user
     cash: number | null,
     action: 'paid' | 'pending',
     id_method: string,
@@ -156,12 +182,17 @@ export class TransactionService {
         throw new NotFoundException('Transaction not found');
     }
 
-    const cashier = await this.userRepository.findOne({ where: { id: id_cashier } });
-    if (!cashier || cashier.role !== Role.Cashier) {
-        throw new NotFoundException('Cashier not found or unauthorized');
+    // Find the user based on id_user and check if the role is 'Cashier'
+    const user = await this.userRepository.findOne({ where: { id: id_user } });
+    if (!user) {
+        throw new NotFoundException('User not found');
     }
 
-    transaction.cashier = cashier;
+    if (user.role !== Role.Cashier) {
+        throw new NotFoundException('User is not authorized to edit this transaction');
+    }
+
+    transaction.cashier = user;
 
     const paymentMethod = await this.paymentMethodRepository.findOne({ where: { id: id_method } });
     if (!paymentMethod) {
@@ -200,6 +231,6 @@ export class TransactionService {
 
     return {
         transaction: updatedTransaction,
-    };
+    };
   }
 }
