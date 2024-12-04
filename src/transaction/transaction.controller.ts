@@ -1,7 +1,8 @@
-import { Controller, Post, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Param, UseGuards, Req, Put, Body } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { Transaction } from './entities/transaction.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EditTransactionDto } from './dto/edit-transaction.dto';
 
 @Controller('transaction')
 export class TransactionController {
@@ -22,5 +23,25 @@ export class TransactionController {
 
     // Panggil service untuk membuat transaksi
     return await this.transactionService.createTransaction(id_user, username);
+  }
+
+  @Put('edit/:id_transaction/:id_cashier')
+  async editTransaction(
+      @Param('id_transaction') id_transaction: string,
+      @Param('id_cashier') id_cashier: string,
+      @Body() editTransactionDto: EditTransactionDto,
+  ) {
+      const updatedTransactionData = await this.transactionService.editTransaction(
+          id_transaction,
+          id_cashier,  // Get cashier ID from parameter
+          editTransactionDto.cash ?? null,
+          editTransactionDto.action,
+          editTransactionDto.id_method,  // Get id_method from body
+      );
+
+      return {
+          message: 'Transaction updated successfully',
+          data: updatedTransactionData,
+      };
   }
 }
