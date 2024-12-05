@@ -224,10 +224,36 @@ export class TransactionService {
         // cart: cartData,
     };
 }
-async getAllTransactions(): Promise<Transaction[]> {
+async getAllTransactionsByUserAndStatus(
+  id_user: string,
+): Promise<Transaction[]> {
   return await this.transactionRepository.find({
-    relations: ['paymentMethod', 'cart', 'cart.user', 'cashier', 'customer'],
+    where: [
+      { customer: { id: id_user } },
+      { cashier: { id: id_user } },
+    ],
+    relations: ['paymentMethod', 'cart', 'cashier', 'customer'],
     order: { createdAt: 'DESC' }, // Mengurutkan berdasarkan tanggal transaksi terbaru
   });
 }
+
+async getTransactionById(id_transaction: string): Promise<Transaction | null> {
+  return await this.transactionRepository.findOne({
+    where: { id: id_transaction },
+    relations: [
+      'paymentMethod',
+      'cart',
+      'cart.order',
+      'cart.order.product', // Relasi hingga produk
+      'cashier',
+      'customer',
+    ],
+  });
+}
+
+
+
+
+
+
 }
