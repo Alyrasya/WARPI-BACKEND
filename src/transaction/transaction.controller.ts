@@ -1,4 +1,4 @@
-import { Controller, Post, Param, UseGuards, Req, Put, Body, Get } from '@nestjs/common';
+import { Controller, Post, Param, UseGuards, Req, Put, Body, Get, HttpException, HttpStatus, Query } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { Transaction } from './entities/transaction.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -9,18 +9,17 @@ export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post(':id_user')
+  @Post('create/:id_user')
   async createTransaction(
     @Param('id_user') id_user: string,
     @Req() req: any,
-  ): Promise<Transaction> {
+  ){
     const username = req.user?.username;
 
     if (!username) {
       throw new Error('Username tidak ditemukan dalam token.');
     }
 
-    // Panggil service untuk membuat transaksi
     return await this.transactionService.createTransaction(id_user, username);
   }
 
@@ -32,10 +31,10 @@ export class TransactionController {
   ) {
       const updatedTransaction = await this.transactionService.editTransaction(
           id_transaction,
-          id_user,  // Menggunakan id_cashier dari parameter
+          id_user,
           editTransactionDto.cash ?? null,
           editTransactionDto.action,
-          editTransactionDto.id_method,  // Menggunakan id_method dari body
+          editTransactionDto.id_method,
       );
       return {
           message: 'Transaction updated successfully',
@@ -43,14 +42,55 @@ export class TransactionController {
       };
       
   }
-  // @UseGuards(JwtAuthGuard) // Melindungi endpoint dengan JWT Guard
+
+  @Get('getAll')
+  async getAllTransaction(
+    @Query('page') page: number,
+    @Query('page_size') page_size: number,
+    @Query('no_order') no_order?: any,
+    @Query('name_order') name_order?: any,
+    @Query('method_name') method_name?: string,
+    @Query('start_date') start_date?: string,
+    @Query('end_date') end_date?: string,
+  ): Promise<{ data: Transaction[]; totalCount: number }> {
+    try {
+      return await this.transactionService.getAllTransaction(
+        page,
+        page_size,
+        no_order,
+        name_order,
+        method_name,
+        start_date,
+        end_date,
+      );
+    } catch (error) {
+      console.error('Kesalahan saat mengambil data transaksi:', error.message);
+      throw new HttpException(
+        'Terjadi kesalahan saat mengambil data transaksi.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get('history')
-  async getAllTransactions() {
-    const transactions = await this.transactionService.getAllTransactions();
+  async getAllHistory() {
+    const transactions = await this.transactionService.getAllHistory();
     return {
       message: 'Transaction history fetched successfully',
       data: transactions,
     };
   }
 
+  @Get('getById/:id')
+  async getByIdTransaction(@Param('id') id: string){
+    try {
+      return await this.transactionService.getByIdTransaction(id);
+    } catch (error) {
+      console.error('Kesalahan saat mengambil data transaksi:', error.message);
+      throw new HttpException(
+        'Terjadi kesalahan saat mengambil data transaksi.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

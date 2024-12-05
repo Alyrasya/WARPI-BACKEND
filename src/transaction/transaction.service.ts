@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, UseGuards } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, UseGuards, HttpStatus, HttpException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { PaymentStatus, Transaction } from '#/transaction/entities/transaction.entity';
@@ -7,6 +7,7 @@ import { User } from '#/user/entities/user.entity';
 import { Order } from '#/order/entities/order.entity';
 import { PaymentMethod } from '#/payment_method/entities/payment_method.entity';
 import { Role } from '#/role/entities/role.entity';
+import { query } from 'express';
 
 
 @Injectable()
@@ -65,7 +66,7 @@ export class TransactionService {
     }
   }
 
-  async createTransaction(id_user: string, username: string): Promise<any> {
+  async createTransaction(id_user: string, username: string) {
     const user = await this.userRepository.findOne({
         where: { id: id_user },
         relations: ['cart', 'cart.order', 'cart.order.product'],
@@ -80,33 +81,38 @@ export class TransactionService {
         throw new BadRequestException('Cart kosong atau tidak valid');
     }
 
+    // Hitung total_price_transaction dari total_price_order dalam cart
     const totalPriceTransaction = cart.order.reduce((total, order) => {
-        const price = parseFloat(order.total_price_order.toString());
+        const price = parseFloat(order.total_price_order.toString()); // Pastikan ini angka
         if (isNaN(price)) {
-            throw new BadRequestException( `Total price order tidak valid: ${order.total_price_order}`);
+            throw new BadRequestException(`Total price order tidak valid: ${order.total_price_order}`);
         }
         return total + price;
     }, 0);
 
+    // Ambil tanggal hari ini
     const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // 00:00:00
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59); // 23:59:59
 
+    // Cari transaksi terakhir untuk hari ini
     const [lastTransactionToday] = await this.transactionRepository.find({
         where: {
-            createdAt: Between(startOfDay, endOfDay),
+            createdAt: Between(startOfDay, endOfDay), // Filter transaksi hari ini
         },
         order: { no_order: 'DESC' },
         take: 1,
     });
 
-    const lastOrderNumberToday = lastTransactionToday?.no_order || 0;
+    const lastOrderNumberToday = lastTransactionToday?.no_order || 0; // Gunakan 0 jika tidak ada
     const nextOrderNumber = lastOrderNumberToday + 1;
 
+    // Validasi nilai sebelum membuat entitas
     if (isNaN(totalPriceTransaction) || isNaN(nextOrderNumber)) {
         throw new BadRequestException('Nilai transaksi tidak valid');
     }
 
+    // Buat transaksi baru
     const transaction = this.transactionRepository.create({
         no_order: nextOrderNumber,
         cart: cart,
@@ -118,9 +124,15 @@ export class TransactionService {
 
     const savedTransaction = await this.transactionRepository.save(transaction);
 
-    await this.orderRepository.remove(cart.order);
-    await this.cartRepository.save(cart);
+    // Hubungkan setiap order dengan transaksi baru
+    cart.order.forEach(order => {
+        order.transaction = savedTransaction; // Setel relasi transaksi pada order
+    });
 
+    // Simpan perubahan pada order dengan relasi transaksi
+    await this.orderRepository.save(cart.order);
+
+    // Membuat response detail transaksi
     const response = {
         id_transaction: savedTransaction.id,
         no_order: savedTransaction.no_order,
@@ -136,6 +148,10 @@ export class TransactionService {
         })),
     };
 
+    // Kosongkan cart user setelah pemetaan data transaksi
+    cart.order = []; // Mengosongkan referensi order di cart tetapi tidak menghapus data order dari database
+    await this.cartRepository.save(cart); // Simpan perubahan cart
+
     return response;
   }
 
@@ -145,8 +161,7 @@ export class TransactionService {
     cash: number | null,
     action: 'paid' | 'pending',
     id_method: string,
-  ) {
-
+) {
     const transaction = await this.transactionRepository.findOne({
         where: { id: id_transaction },
         relations: ['paymentMethod', 'cashier', 'cart.user'],
@@ -157,7 +172,6 @@ export class TransactionService {
     }
 
     const cashier = await this.userRepository.findOne({ where: { id: id_user } });
-    
     if (!cashier || cashier.role !== Role.Cashier) {
         throw new NotFoundException('Cashier not found or unauthorized');
     }
@@ -199,14 +213,101 @@ export class TransactionService {
 
     const updatedTransaction = await this.transactionRepository.save(transaction);
 
+    return { transaction: updatedTransaction };
+  }
+
+  async getAllHistory(){
+    return await this.transactionRepository.find({
+      relations: ['paymentMethod', 'cart', 'cart.user', 'cashier', 'customer'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async getAllTransaction(
+    page: number,
+    page_size: number,
+    no_order?: any,
+    name_order?: any,
+    method_name?: string,
+    start_date?: string,
+    end_date?: string,
+  ) {
+    const query = this.transactionRepository
+      .createQueryBuilder('transaction')
+      .select([
+        'transaction.id',
+        'transaction.no_order',
+        'transaction.name_order',
+        'transaction.total_price_transaction',
+        'transaction.cash',
+        'transaction.change_money',
+        'transaction.payment_status',
+        'paymentMethod.method_name',
+        'transaction.createdAt',
+      ])
+      .innerJoin('transaction.paymentMethod', 'paymentMethod')
+      .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
+  
+    if (no_order) {
+      query.andWhere('transaction.no_order = :no_order', { no_order });
+    }
+    if (name_order) {
+      query.andWhere('transaction.name_order LIKE :name_order', { name_order: `%${name_order}%` });
+    }
+    if (method_name) {
+      query.andWhere('paymentMethod.method_name = :method_name', { method_name });
+    }
+    if (start_date) {
+      query.andWhere('transaction.createdAt >= :start_date', { start_date });
+    }
+    if (end_date) {
+      query.andWhere('transaction.createdAt <= :end_date', { end_date });
+    }
+  
+    query.orderBy('transaction.createdAt', 'ASC');
+
+    query.skip((page - 1) * page_size).take(page_size);
+
+    const [transactions, totalCount] = await query.getManyAndCount();
+  
     return {
-        transaction: updatedTransaction,
-    };
-}
-async getAllTransactions(): Promise<Transaction[]> {
-  return await this.transactionRepository.find({
-    relations: ['paymentMethod', 'cart', 'cart.user', 'cashier', 'customer'],
-    order: { createdAt: 'DESC' }, // Mengurutkan berdasarkan tanggal transaksi terbaru
-  });
-}
+      data: transactions,
+      totalCount,
+    };
+  }  
+  
+  async getByIdTransaction(id: string){
+    try {
+      const transaction = await this.transactionRepository
+      .createQueryBuilder('transaction')
+      .select([
+        'transaction.id',
+        'transaction.no_order',
+        'transaction.name_order',
+        'transaction.total_price_transaction',
+        'transaction.cash',
+        'transaction.change_money',
+        'transaction.payment_status',
+        'paymentMethod.method_name',
+        'transaction.createdAt',
+      ])
+      .innerJoin('transaction.paymentMethod', 'paymentMethod')
+        .leftJoinAndSelect('transaction.order', 'order')
+        .leftJoinAndSelect('order.product', 'product')
+        .where('transaction.id = :id', { id })
+        .getOne();
+
+      if (!transaction) {
+        throw new HttpException('Transaksi tidak ditemukan.', HttpStatus.NOT_FOUND);
+      }
+
+      return transaction;
+    } catch (error) {
+      console.error('Kesalahan saat mengambil transaksi oleh ID:', error.message);
+      throw new HttpException(
+        'Terjadi kesalahan saat mengambil transaksi.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }
