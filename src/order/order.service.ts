@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Order } from '#/order/entities/order.entity';
 import { Product } from '#/product/entities/product.entity';
 import { User } from '#/user/entities/user.entity';
+import { Role } from '#/role/entities/role.entity';
 
 @Injectable()
 export class OrderService {
@@ -17,13 +18,17 @@ export class OrderService {
   ) {}
 
   async addToCart(id_user: string, id_product: string[]) {
-    // Cek apakah user dengan id_user ada
     const user = await this.userRepository.findOne({
       where: { id: id_user },
-      relations: ['cart'], // Pastikan relasi dengan cart sudah diatur
+      relations: ['cart'],
     });
+
     if (!user) {
       throw new NotFoundException('User tidak ditemukan');
+    }
+
+    if (user.role !== Role.Customer) {
+      throw new BadRequestException('Hanya pengguna dengan peran Customer yang dapat menambahkan produk ke keranjang');
     }
   
     // Cek apakah user memiliki id_cart

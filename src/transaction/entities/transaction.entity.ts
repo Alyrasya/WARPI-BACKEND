@@ -1,4 +1,5 @@
 import { Cart } from "#/cart/entities/cart.entity";
+import { Order } from "#/order/entities/order.entity";
 import { PaymentMethod } from "#/payment_method/entities/payment_method.entity";
 import { User } from "#/user/entities/user.entity";
 import { 
@@ -8,6 +9,7 @@ import {
     Entity, 
     JoinColumn, 
     ManyToOne, 
+    OneToMany, 
     OneToOne, 
     PrimaryGeneratedColumn, 
     UpdateDateColumn 
@@ -79,4 +81,7 @@ export class Transaction {
         nullable: true,
     })
     deletedAt: Date;
+
+    @OneToMany(() => Order, (order) => order.transaction)
+    order: Order[];
 }

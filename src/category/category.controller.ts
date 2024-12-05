@@ -20,6 +20,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Category } from './entities/category.entity';
 import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
+import { of } from 'rxjs';
 import { join } from 'path';
 
 @Controller('category')
@@ -59,7 +60,7 @@ export class CategoryController {
   }
 
   @Get('getAll')
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   async getAllCategories(
     @Query('page') page: number,
     @Query('page_size') page_size: number,
@@ -82,6 +83,11 @@ export class CategoryController {
       );
     }
   }
+  // @Get ('upload/:image')
+  // getImage(@Param('image')imagePath: string,@Res() res: any){
+  //   const filePath = join(process.cwd(),'src', 'product', 'photo_product', imagePath);
+  //   return res.sendFile(filePath);
+  // }
 
   @Get(':id/detail')
   async getProductsByCategory(

@@ -1,5 +1,6 @@
 import { Cart } from "#/cart/entities/cart.entity";
 import { Product } from "#/product/entities/product.entity";
+import { Transaction } from "#/transaction/entities/transaction.entity";
 import { 
     Column, 
     CreateDateColumn, 
@@ -29,6 +30,10 @@ export class Order {
     @ManyToOne(() => Product, product => product.order)
     @JoinColumn({ name: 'id_product', referencedColumnName: 'id'})
     product: Product;
+
+    @ManyToOne(() => Transaction, (transaction) => transaction.order)
+    @JoinColumn({ name: 'id_transaction' })
+    transaction: Transaction;
 
     @CreateDateColumn({     
         type: 'timestamp with time zone',
