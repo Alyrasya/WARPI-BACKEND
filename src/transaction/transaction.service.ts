@@ -304,6 +304,46 @@ export class TransactionService {
     };
   }  
   
+  async getAllTransactioncashier(
+    page: number,
+    page_size: number,
+    no_order?: any,
+    name_order?: any,
+  ) {
+    const query = this.transactionRepository
+      .createQueryBuilder('transaction')
+      .select([
+        'transaction.id',
+        'transaction.no_order',
+        'transaction.name_order',
+        'transaction.total_price_transaction',
+        'transaction.cash',
+        'transaction.change_money',
+        'transaction.payment_status',
+        'paymentMethod.method_name',
+        'transaction.createdAt',
+      ])
+      .innerJoin('transaction.paymentMethod', 'paymentMethod')
+      .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
+  
+    if (no_order) {
+      query.andWhere('transaction.no_order = :no_order', { no_order });
+    }
+    if (name_order) {
+      query.andWhere('transaction.name_order LIKE :name_order', { name_order: `%${name_order}%` });
+    }
+  
+    query.orderBy('transaction.createdAt', 'ASC');
+
+    query.skip((page - 1) * page_size).take(page_size);
+
+    const [transactions, totalCount] = await query.getManyAndCount();
+  
+    return {
+      data: transactions,
+      totalCount,
+    };
+  }  
   async getByIdTransaction(id: string){
     try {
       const transaction = await this.transactionRepository
