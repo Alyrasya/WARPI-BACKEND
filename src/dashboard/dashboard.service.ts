@@ -12,6 +12,12 @@ export interface AdminSummary{
   totalMonthlyIncome: number;
   totalAllIncome: number;
 }
+export interface CashierSummary{
+  totalPaidTransaction: number,
+  totalUnpaidTransaction: number,
+  totalPendingTransaction:number,
+  totalTransactionCashier:number
+}
 
 @Injectable()
 export class DashboardService {
@@ -38,4 +44,19 @@ export class DashboardService {
       totalAllIncome,
     };
   }
+
+  async getCashierSummary(idUser : string){
+    const totalPaidTransaction = await this.transactionService.countPaidTransactions()
+    const totalUnpaidTransaction = await this.transactionService.countUnpaidTransactions()
+    const totalPendingTransaction = await this.transactionService.countPendingTransactions()
+    const totalTransactionCashier = await this.transactionService.countTotalIncomeByCashier(idUser)
+
+    return{
+      totalPaidTransaction,
+      totalUnpaidTransaction,
+      totalPendingTransaction,
+      totalTransactionCashier
+    }
+  }
+  
 }

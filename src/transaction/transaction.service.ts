@@ -6,7 +6,6 @@ import { Cart } from '#/cart/entities/cart.entity';
 import { User } from '#/user/entities/user.entity';
 import { Order } from '#/order/entities/order.entity';
 import { PaymentMethod } from '#/payment_method/entities/payment_method.entity';
-import { EditTransactionDto } from './dto/edit-transaction.dto';
 import { Role } from '#/role/entities/role.entity'; // Pastikan untuk mengimpor enum Role
 
 
@@ -29,6 +28,18 @@ export class TransactionService {
   async countPaidTransactions(){
     return await this.transactionRepository.count({
       where: { payment_status: 'paid' },
+    });
+  }
+
+  async countUnpaidTransactions(){
+    return await this.transactionRepository.count({
+      where: { payment_status: 'unpaid' },
+    });
+  }
+
+  async countPendingTransactions(){
+    return await this.transactionRepository.count({
+      where: { payment_status: 'pending' },
     });
   }
 
@@ -69,6 +80,22 @@ export class TransactionService {
     }
   }
 
+  async countTotalIncomeByCashier(idUser: string) {
+    try {
+      const result = await this.transactionRepository
+        .createQueryBuilder('transaction')
+        .select('SUM(transaction.total_price_transaction)', 'total')
+        .where('transaction.payment_status = :status', { status: 'paid' }) // Filter status "paid"
+        .andWhere('transaction.id_cashier = :idUser', { idUser }) // Filter berdasarkan id_cashier
+        .getRawOne();
+  
+      // Jika tidak ada transaksi atau totalnya null, kembalikan 0
+      return result?.total ? parseFloat(result.total) : 0;
+    } catch (error) {
+      throw new BadRequestException('Error calculating total income by cashier');
+    }
+  }
+  
   async createTransaction(id_user: string, username: string): Promise<any> {
     const user = await this.userRepository.findOne({
         where: { id: id_user },
