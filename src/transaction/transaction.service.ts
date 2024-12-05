@@ -43,6 +43,22 @@ export class TransactionService {
       where: { payment_status: 'pending' },
     });
   }
+  async countTotalIncomeByCashier(idUser: string) {
+    try {
+      const result = await this.transactionRepository
+        .createQueryBuilder('transaction')
+        .select('SUM(transaction.total_price_transaction)', 'total')
+        .where('transaction.payment_status = :status', { status: 'paid' }) // Filter status "paid"
+        .andWhere('transaction.id_cashier = :idUser', { idUser}) // Filter berdasarkan id_cashier
+        .getRawOne();
+  
+      // Jika tidak ada transaksi atau totalnya null, kembalikan 0
+      return result?.total ? parseFloat(result.total) : 0;
+    } catch (error) {
+      throw new BadRequestException('Error calculating total income by cashier');
+    }
+  }
+  
 
   async countTotalMonthlyIncome(){
     try {
