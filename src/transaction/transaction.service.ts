@@ -307,8 +307,9 @@ export class TransactionService {
   async getAllTransactioncashier(
     page: number,
     page_size: number,
-    no_order?: any,
-    name_order?: any,
+    no_order?: number,
+    name_order?: string,
+    payment_status?: PaymentStatus,
   ) {
     const query = this.transactionRepository
       .createQueryBuilder('transaction')
@@ -323,27 +324,39 @@ export class TransactionService {
         'paymentMethod.method_name',
         'transaction.createdAt',
       ])
-      .innerJoin('transaction.paymentMethod', 'paymentMethod')
-      .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
+      .innerJoin('transaction.paymentMethod', 'paymentMethod');
   
-    if (no_order) {
+    // Pastikan filter berdasarkan status pembayaran diterapkan dengan benar
+    if (payment_status) {
+      query.andWhere('transaction.payment_status = :payment_status', { payment_status });
+    }
+  
+    // Filter berdasarkan nomor order jika diberikan
+    if (no_order !== undefined) {
       query.andWhere('transaction.no_order = :no_order', { no_order });
     }
-    if (name_order) {
+  
+    // Filter berdasarkan nama order jika diberikan
+    if (name_order !== undefined) {
       query.andWhere('transaction.name_order LIKE :name_order', { name_order: `%${name_order}%` });
     }
   
+    // Urutkan berdasarkan waktu pembuatan
     query.orderBy('transaction.createdAt', 'ASC');
-
+  
+    // Pagination
     query.skip((page - 1) * page_size).take(page_size);
-
+  
+    // Ambil data transaksi dan total jumlah data
     const [transactions, totalCount] = await query.getManyAndCount();
   
+    // Pastikan kita mengembalikan data transaksi dan total count dengan benar
     return {
-      data: transactions,
-      totalCount,
+      data: transactions, // Data transaksi
+      totalCount, // Total transaksi
     };
-  }  
+  }
+  
   async getByIdTransaction(id: string){
     try {
       const transaction = await this.transactionRepository

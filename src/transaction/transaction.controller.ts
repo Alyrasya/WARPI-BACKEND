@@ -1,6 +1,6 @@
 import { Controller, Post, Param, UseGuards, Req, Put, Body, Get, HttpException, HttpStatus, Query } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import { Transaction } from './entities/transaction.entity';
+import { PaymentStatus, Transaction } from './entities/transaction.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EditTransactionDto } from './dto/edit-transaction.dto';
 
@@ -41,4 +41,38 @@ export class TransactionController {
           data: updatedTransaction,
       };
   }
+
+  @Get('getById/:id')
+  async getByIdTransaction(@Param('id') id: string){
+    try {
+      return await this.transactionService.getByIdTransaction(id);
+    } catch (error) {
+      console.error('Kesalahan saat mengambil data transaksi:', error.message);
+      throw new HttpException(
+        'Terjadi kesalahan saat mengambil data transaksi.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+@Get('getAllTransactionCashier')
+async getAllTransactionCashier(
+  @Query('page') page: number = 1,
+  @Query('page_size') page_size: number = 10,
+  @Query('no_order') no_order?: number,
+  @Query('name_order') name_order?: string,
+  @Query('payment_status') payment_status?: PaymentStatus,
+) {
+  // Panggil service untuk mendapatkan transaksi
+  const transactions = await this.transactionService.getAllTransactioncashier(
+    page,
+    page_size,
+    no_order,
+    name_order,
+    payment_status,
+  );
+
+  return transactions;
+}
+
 }
