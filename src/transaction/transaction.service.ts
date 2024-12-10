@@ -32,6 +32,34 @@ export class TransactionService {
     });
   }
 
+  async countUnpaidTransactions(){
+    return await this.transactionRepository.count({
+      where: { payment_status: 'unpaid' },
+    });
+  }
+
+  async countPendingTransactions(){
+    return await this.transactionRepository.count({
+      where: { payment_status: 'pending' },
+    });
+  }
+  async countTotalIncomeByCashier(idUser: string) {
+    try {
+      const result = await this.transactionRepository
+        .createQueryBuilder('transaction')
+        .select('SUM(transaction.total_price_transaction)', 'total')
+        .where('transaction.payment_status = :status', { status: 'paid' }) // Filter status "paid"
+        .andWhere('transaction.id_cashier = :idUser', { idUser}) // Filter berdasarkan id_cashier
+        .getRawOne();
+  
+      // Jika tidak ada transaksi atau totalnya null, kembalikan 0
+      return result?.total ? parseFloat(result.total) : 0;
+    } catch (error) {
+      throw new BadRequestException('Error calculating total income by cashier');
+    }
+  }
+  
+
   async countTotalMonthlyIncome(){
     try {
       const currentDate = new Date();
@@ -319,6 +347,46 @@ async getTransactionById(id_transaction: string): Promise<Transaction | null> {
     };
   }  
   
+  async getAllTransactioncashier(
+    page: number,
+    page_size: number,
+    no_order?: any,
+    name_order?: any,
+  ) {
+    const query = this.transactionRepository
+      .createQueryBuilder('transaction')
+      .select([
+        'transaction.id',
+        'transaction.no_order',
+        'transaction.name_order',
+        'transaction.total_price_transaction',
+        'transaction.cash',
+        'transaction.change_money',
+        'transaction.payment_status',
+        'paymentMethod.method_name',
+        'transaction.createdAt',
+      ])
+      .innerJoin('transaction.paymentMethod', 'paymentMethod')
+      .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
+  
+    if (no_order) {
+      query.andWhere('transaction.no_order = :no_order', { no_order });
+    }
+    if (name_order) {
+      query.andWhere('transaction.name_order LIKE :name_order', { name_order: `%${name_order}%` });
+    }
+  
+    query.orderBy('transaction.createdAt', 'ASC');
+
+    query.skip((page - 1) * page_size).take(page_size);
+
+    const [transactions, totalCount] = await query.getManyAndCount();
+  
+    return {
+      data: transactions,
+      totalCount,
+    };
+  }  
   async getByIdTransaction(id: string){
     try {
       const transaction = await this.transactionRepository
