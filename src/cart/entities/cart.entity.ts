@@ -44,6 +44,4 @@ export class Cart {
 
       @OneToMany(() => Order, order => order.cart)
       order: Order[];
-      products: any;
 }
-
