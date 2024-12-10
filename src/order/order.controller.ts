@@ -7,7 +7,7 @@ import { EditOrderQuantityDto } from './dto/edit-order';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  @Post('add/:id_user')
+@Post('add/:id_user')
   async addToCart(
     @Param('id_user') id_user: string,
     @Body() addToCartDto: AddToCartDto,

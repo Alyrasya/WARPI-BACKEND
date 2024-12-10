@@ -45,7 +45,7 @@ export class TransactionController {
       
   }
   // @UseGuards(JwtAuthGuard) // Melindungi endpoint dengan JWT Guard
-  @Get('transactions/:id_user')
+@Get('transactions/:id_user')
 async getAllTransactionsByUserAndStatus(
   @Param('id_user') id_user: string,
 ): Promise<Transaction[]> {
