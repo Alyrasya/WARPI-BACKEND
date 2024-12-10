@@ -1,6 +1,6 @@
 import { Controller, Post, Param, UseGuards, Req, Put, Body, Get, HttpException, HttpStatus, Query } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import { Transaction } from './entities/transaction.entity';
+import { PaymentStatus, Transaction } from './entities/transaction.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EditTransactionDto } from './dto/edit-transaction.dto';
 
@@ -47,8 +47,7 @@ export class TransactionController {
   async getAllTransaction(
     @Query('page') page: number,
     @Query('page_size') page_size: number,
-    @Query('no_order') no_order?: any,
-    @Query('name_order') name_order?: any,
+    @Query('name_order') name_order?: string,
     @Query('method_name') method_name?: string,
     @Query('start_date') start_date?: string,
     @Query('end_date') end_date?: string,
@@ -57,7 +56,6 @@ export class TransactionController {
       return await this.transactionService.getAllTransaction(
         page,
         page_size,
-        no_order,
         name_order,
         method_name,
         start_date,
@@ -92,5 +90,20 @@ export class TransactionController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @Get('getAllTransactionCashier')
+  async getAllTransactionCashier(
+    @Query('page') page: number,
+    @Query('page_size') page_size: number,
+    @Query('name_order') name_order?: string,
+    @Query('payment_status') payment_status?: PaymentStatus // Tipe parameter disesuaikan dengan enum
+  ) {
+    return await this.transactionService.getAllTransactionCashier(
+      page,
+      page_size,
+      name_order,
+      payment_status
+    );
   }
 }

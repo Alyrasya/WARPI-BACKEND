@@ -226,8 +226,7 @@ export class TransactionService {
   async getAllTransaction(
     page: number,
     page_size: number,
-    no_order?: any,
-    name_order?: any,
+    name_order?: string,
     method_name?: string,
     start_date?: string,
     end_date?: string,
@@ -248,22 +247,29 @@ export class TransactionService {
       .innerJoin('transaction.paymentMethod', 'paymentMethod')
       .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
   
-    if (no_order) {
-      query.andWhere('transaction.no_order = :no_order', { no_order });
-    }
     if (name_order) {
       query.andWhere('transaction.name_order LIKE :name_order', { name_order: `%${name_order}%` });
     }
     if (method_name) {
       query.andWhere('paymentMethod.method_name = :method_name', { method_name });
     }
-    if (start_date) {
-      query.andWhere('transaction.createdAt >= :start_date', { start_date });
+
+    if (start_date && end_date) {
+      const formattedStartDate = new Date(start_date).toISOString().split('T')[0] + 'T00:00:00.000+07';
+      const formattedEndDate = new Date(end_date).toISOString().split('T')[0] + 'T23:59:59.999+07';
+    
+      console.log(`Start Date: ${formattedStartDate}, End Date: ${formattedEndDate}`);
+      
+      query.andWhere(
+        `transaction.createdAt AT TIME ZONE 'Asia/Jakarta' >= :start_date 
+         AND transaction.createdAt AT TIME ZONE 'Asia/Jakarta' <= :end_date`,
+        {
+          start_date: formattedStartDate,
+          end_date: formattedEndDate,
+        }
+      );
     }
-    if (end_date) {
-      query.andWhere('transaction.createdAt <= :end_date', { end_date });
-    }
-  
+    
     query.orderBy('transaction.createdAt', 'ASC');
 
     query.skip((page - 1) * page_size).take(page_size);
@@ -310,4 +316,45 @@ export class TransactionService {
       );
     }
   }
+
+  async getAllTransactionCashier(
+    page: number,
+    page_size: number,
+    name_order?: string,
+    payment_status?: PaymentStatus
+  ) {
+    const query = this.transactionRepository
+      .createQueryBuilder('transaction')
+      .select([
+        'transaction.id',
+        'transaction.no_order',
+        'transaction.name_order',
+        'transaction.total_price_transaction',
+        'transaction.cash',
+        'transaction.change_money',
+        'transaction.payment_status',
+        'paymentMethod.method_name',
+        'transaction.createdAt',
+      ])
+      .leftJoin('transaction.paymentMethod', 'paymentMethod');
+  
+    if (name_order) {
+      query.andWhere('transaction.name_order LIKE :name_order', { name_order: `%${name_order}%` });
+    }
+  
+    if (payment_status) {
+      query.andWhere('transaction.payment_status::text = :payment_status', { payment_status });
+    }
+  
+    query.orderBy('transaction.createdAt', 'ASC');
+    query.skip((page - 1) * page_size).take(page_size);
+  
+    const [transactions, totalCount] = await query.getManyAndCount();
+  
+    return {
+      data: transactions,
+      totalCount,
+    };
+  }
+    
 }

@@ -11,7 +11,6 @@ import {
   HttpCode,
   HttpStatus,
   HttpException,
-  Delete,
   BadRequestException,
 } from '@nestjs/common';
 import { UserService } from './user.service';

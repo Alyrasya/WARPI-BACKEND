@@ -17,7 +17,7 @@ export class CartService {
           id: id_user,
         },
       },
-      relations: ['order', 'order.product'], // Pastikan sesuai dengan relasi yang ada
+      relations: ['order', 'order.product'],
     });
   }
 }
