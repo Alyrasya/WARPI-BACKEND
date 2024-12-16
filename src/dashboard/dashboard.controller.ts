@@ -10,8 +10,8 @@ export class DashboardController {
     return this.dashboardService.getAdminSummary();
   }
 
-  @Get('cashier-summary/:idUser')
-  async getCashierSummary(@Param('idUser') idUser: string) {
-    return this.dashboardService.getCashierSummary(idUser);
-  }
+  // @Get('cashier-summary/:idUser')
+  // async getCashierSummary(@Param('idUser') idUser: string) {
+  //   return this.dashboardService.getCashierSummary(idUser);
+  // }
 }

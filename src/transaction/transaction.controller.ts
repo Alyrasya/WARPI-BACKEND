@@ -1,8 +1,9 @@
-import { Controller, Post, Param, UseGuards, Req, Put, Body, Get, HttpException, HttpStatus, Query } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { PaymentStatus, Transaction } from './entities/transaction.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { EditTransactionDto } from './dto/edit-transaction.dto';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Cart } from '#/cart/entities/cart.entity';
 
 @Controller('transaction')
 export class TransactionController {
@@ -78,7 +79,58 @@ export class TransactionController {
       data: transactions,
     };
   }
+  @Get ('transaction/:id_user')
+  async getAllTransactionByUserAndStatus(
+    @Param ('id_user')id_user:string,
+  ): Promise<Transaction[]>{
+    return this.transactionService.getAllTransactionsByUserAndStatus(id_user);
+  }
 
+  @Get(':id_transaction')
+  async getTransactionById(
+    @Param('id_transaction') id_transaction: string,
+  ): Promise<any> {
+    const transaction = await this.transactionService.getTransactionById(id_transaction);
+  
+    if (!transaction) {
+      return {
+        status: 404,
+        message: 'Transaction not found',
+      };
+    }
+  
+    return {
+      status: 200,
+      message: 'Transaction retrieved successfully',
+      data: {
+        id: transaction.id,
+        total_price_transaction: transaction.total_price_transaction,
+        change_money: transaction.change_money,
+        cash: transaction.cash,
+        name_order: transaction.name_order,
+        no_order: transaction.no_order,
+        payment_status: transaction.payment_status,
+        createdAt: transaction.createdAt,
+        updatedAt: transaction.updatedAt,
+        paymentMethod: transaction.paymentMethod,
+        cashier: transaction.cashier,
+        customer: transaction.customer,
+        cart: transaction.cart
+          ? {
+              id: transaction.cart.id,
+              products: transaction.cart.order.map((order) => ({
+                id: order.product.id,
+                name: order.product.product_name,
+                description: order.product.product_description,
+                price: order.product.price,
+                quantity: order.qty,
+                total_price: order.total_price_order,
+              })),
+            }
+          : null,
+      },
+    };
+  }
   @Get('getById/:id')
   async getByIdTransaction(@Param('id') id: string){
     try {
@@ -104,6 +156,6 @@ export class TransactionController {
       page_size,
       name_order,
       payment_status
-    );
-  }
+    );
+  }
 }

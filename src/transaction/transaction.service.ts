@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, UseGuards, HttpStatus, HttpException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, HttpStatus, HttpException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { PaymentStatus, Transaction } from '#/transaction/entities/transaction.entity';
@@ -7,11 +7,11 @@ import { User } from '#/user/entities/user.entity';
 import { Order } from '#/order/entities/order.entity';
 import { PaymentMethod } from '#/payment_method/entities/payment_method.entity';
 import { Role } from '#/role/entities/role.entity';
-import { query } from 'express';
-
 
 @Injectable()
 export class TransactionService {
+  getAllTransactionsByUserAndStatus: any;
+  getTransactionById: any;
  
   constructor(
     @InjectRepository(Transaction)
@@ -32,34 +32,6 @@ export class TransactionService {
     });
   }
 
-  async countUnpaidTransactions(){
-    return await this.transactionRepository.count({
-      where: { payment_status: 'unpaid' },
-    });
-  }
-
-  async countPendingTransactions(){
-    return await this.transactionRepository.count({
-      where: { payment_status: 'pending' },
-    });
-  }
-  async countTotalIncomeByCashier(idUser: string) {
-    try {
-      const result = await this.transactionRepository
-        .createQueryBuilder('transaction')
-        .select('SUM(transaction.total_price_transaction)', 'total')
-        .where('transaction.payment_status = :status', { status: 'paid' }) // Filter status "paid"
-        .andWhere('transaction.id_cashier = :idUser', { idUser}) // Filter berdasarkan id_cashier
-        .getRawOne();
-  
-      // Jika tidak ada transaksi atau totalnya null, kembalikan 0
-      return result?.total ? parseFloat(result.total) : 0;
-    } catch (error) {
-      throw new BadRequestException('Error calculating total income by cashier');
-    }
-  }
-  
-
   async countTotalMonthlyIncome(){
     try {
       const currentDate = new Date();
@@ -69,7 +41,7 @@ export class TransactionService {
       const result = await this.transactionRepository
         .createQueryBuilder('transaction')
         .select('SUM(transaction.total_price_transaction)', 'total')
-        .where('transaction.payment_status = :status', { status: 'paid' })
+        .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
         .andWhere('EXTRACT(MONTH FROM transaction.created_at) = :month', { month: currentMonth })
         .andWhere('EXTRACT(YEAR FROM transaction.created_at) = :year', { year: currentYear })
         .getRawOne();
@@ -85,7 +57,7 @@ export class TransactionService {
       const result = await this.transactionRepository
         .createQueryBuilder('transaction')
         .select('SUM(transaction.total_price_transaction)', 'total')
-        .where('transaction.payment_status = :status', { status: 'paid' })
+        .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
         .getRawOne();
 
       return result?.total ? parseFloat(result.total) : 0;
@@ -94,6 +66,7 @@ export class TransactionService {
     }
   }
 
+  //Customer
   async createTransaction(id_user: string, username: string) {
     const user = await this.userRepository.findOne({
         where: { id: id_user },
@@ -183,6 +156,7 @@ export class TransactionService {
     return response;
   }
 
+  //Cashier
   async editTransaction(
     id_transaction: string,
     id_user: string,
@@ -244,6 +218,7 @@ export class TransactionService {
     return { transaction: updatedTransaction };
   }
 
+  //Customer
   async getAllHistory(){
     return await this.transactionRepository.find({
       relations: ['paymentMethod', 'cart', 'cart.user', 'cashier', 'customer'],
@@ -251,6 +226,7 @@ export class TransactionService {
     });
   }
 
+  //Admin
   async getAllTransaction(
     page: number,
     page_size: number,
@@ -305,88 +281,12 @@ export class TransactionService {
     const [transactions, totalCount] = await query.getManyAndCount();
   
     return {
-        transaction: updatedTransaction,
-        // cashier: cashierData,
-        // cart: cartData,
-    };
-}
-async getAllTransactionsByUserAndStatus(
-  id_user: string,
-): Promise<Transaction[]> {
-  return await this.transactionRepository.find({
-    where: [
-      { customer: { id: id_user } },
-      { cashier: { id: id_user } },
-    ],
-    relations: ['paymentMethod', 'cart', 'cashier', 'customer'],
-    order: { createdAt: 'DESC' }, // Mengurutkan berdasarkan tanggal transaksi terbaru
-  });
-}
-
-async getTransactionById(id_transaction: string): Promise<Transaction | null> {
-  return await this.transactionRepository.findOne({
-    where: { id: id_transaction },
-    relations: [
-      'paymentMethod',
-      'cart',
-      'cart.order',
-      'cart.order.product', // Relasi hingga produk
-      'cashier',
-      'customer',
-    ],
-  });
-}
-
-
-
-
-
-
       data: transactions,
       totalCount,
     };
   }  
   
-  async getAllTransactioncashier(
-    page: number,
-    page_size: number,
-    no_order?: any,
-    name_order?: any,
-  ) {
-    const query = this.transactionRepository
-      .createQueryBuilder('transaction')
-      .select([
-        'transaction.id',
-        'transaction.no_order',
-        'transaction.name_order',
-        'transaction.total_price_transaction',
-        'transaction.cash',
-        'transaction.change_money',
-        'transaction.payment_status',
-        'paymentMethod.method_name',
-        'transaction.createdAt',
-      ])
-      .innerJoin('transaction.paymentMethod', 'paymentMethod')
-      .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
-  
-    if (no_order) {
-      query.andWhere('transaction.no_order = :no_order', { no_order });
-    }
-    if (name_order) {
-      query.andWhere('transaction.name_order LIKE :name_order', { name_order: `%${name_order}%` });
-    }
-  
-    query.orderBy('transaction.createdAt', 'ASC');
-
-    query.skip((page - 1) * page_size).take(page_size);
-
-    const [transactions, totalCount] = await query.getManyAndCount();
-  
-    return {
-      data: transactions,
-      totalCount,
-    };
-  }  
+  //Admin
   async getByIdTransaction(id: string){
     try {
       const transaction = await this.transactionRepository
@@ -421,7 +321,19 @@ async getTransactionById(id_transaction: string): Promise<Transaction | null> {
       );
     }
   }
-
+  // async getAllTransactionsByUserAndStatus(
+  //   id_user: string,
+  // ): Promise<Transaction[]> {
+  //   return await this.transactionRepository.find({
+  //     where: [
+  //       { customer: { id: id_user } },
+  //       { cashier: { id: id_user } },
+  //     ],
+  //     relations: ['paymentMethod', 'cart', 'cashier', 'customer'],
+  //     order: { createdAt: 'DESC' }, // Mengurutkan berdasarkan tanggal transaksi terbaru
+  //   });
+  // }
+  //Cashier
   async getAllTransactionCashier(
     page: number,
     page_size: number,
@@ -459,7 +371,6 @@ async getTransactionById(id_transaction: string): Promise<Transaction | null> {
     return {
       data: transactions,
       totalCount,
-    };
-  }
-    
+    };
+  }
 }

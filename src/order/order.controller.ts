@@ -16,15 +16,15 @@ export class OrderController {
     return this.orderService.addToCart(id_user, id_product);
   }
 
-  @Put('/edit-quantity/:id_order')
-  async editOrderQuantity(
-    @Param('id_order') id_order: string,
-    @Body() editOrderQuantityDto: EditOrderQuantityDto,
-  ) {
-    const { action, qty } = editOrderQuantityDto;
-  
-    return this.orderService.editOrderQuantity(id_order, action, qty);
-  }
+    @Put('/edit-quantity/:id_order')
+    async editOrderQuantity(
+      @Param('id_order') id_order: string,
+      @Body() editOrderQuantityDto: EditOrderQuantityDto,
+    ) {
+      const { action, qty } = editOrderQuantityDto;
+    
+      return this.orderService.editOrderQuantity(id_order, action, qty);
+    }
 
   @Delete('/delete/:id_order')
   async deleteOrder(@Param('id_order') id_order: string) {

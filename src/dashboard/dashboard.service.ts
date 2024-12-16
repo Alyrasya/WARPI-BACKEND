@@ -45,18 +45,18 @@ export class DashboardService {
     };
   }
 
-  async getCashierSummary(idUser : string){
-    const totalPaidTransaction = await this.transactionService.countPaidTransactions()
-    const totalUnpaidTransaction = await this.transactionService.countUnpaidTransactions()
-    const totalPendingTransaction = await this.transactionService.countPendingTransactions()
-    const totalTransactionCashier = await this.transactionService.countTotalIncomeByCashier(idUser)
+  // async getCashierSummary(idUser : string){
+  //   const totalPaidTransaction = await this.transactionService.countPaidTransactions()
+  //   const totalUnpaidTransaction = await this.transactionService.countUnpaidTransactions()
+  //   const totalPendingTransaction = await this.transactionService.countPendingTransactions()
+  //   const totalTransactionCashier = await this.transactionService.countTotalIncomeByCashier(idUser)
 
-    return{
-      totalPaidTransaction,
-      totalUnpaidTransaction,
-      totalPendingTransaction,
-      totalTransactionCashier
-    }
-  }
+  //   return{
+  //     totalPaidTransaction,
+  //     totalUnpaidTransaction,
+  //     totalPendingTransaction,
+  //     totalTransactionCashier
+  //   }
+  // }
   
 }
