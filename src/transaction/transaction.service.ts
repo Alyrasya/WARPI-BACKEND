@@ -10,8 +10,9 @@ import { Role } from '#/role/entities/role.entity';
 
 @Injectable()
 export class TransactionService {
-  getAllTransactionsByUserAndStatus: any;
-  getTransactionById: any;
+  getAllTransactionCustomer: any;
+  // getAllTransactionsByUserAndStatus: any;
+  // getTransactionById: any;
  
   constructor(
     @InjectRepository(Transaction)
@@ -50,6 +51,29 @@ export class TransactionService {
     } catch (error) {
       throw new BadRequestException('Error calculating monthly income');
     }
+  }
+  async getAllTransactionsByUserAndStatus(
+    id_user: string,
+  ): Promise<Transaction[]> {
+    return await this.transactionRepository.find({
+      where: [
+        { customer: { id: id_user } },
+      ],
+      relations: ['paymentMethod', 'cart', 'customer'],
+      order: { createdAt: 'DESC' }, // Mengurutkan berdasarkan tanggal transaksi terbaru
+    });
+  }
+  async getTransactionById(id_transaction: string): Promise<Transaction | null> {
+    return await this.transactionRepository.findOne({
+      where: { id: id_transaction },
+      relations: [
+        'cart',
+        'cart.order',
+        'cart.order.product', // Pastikan relasi product juga dimuat
+        'customer', // Relasi customer
+        'cashier',  // Relasi cashier jika ada
+      ],
+    });
   }
 
   async countTotalAllIncome(){
@@ -285,7 +309,7 @@ export class TransactionService {
       totalCount,
     };
   }  
-  
+
   //Admin
   async getByIdTransaction(id: string){
     try {
