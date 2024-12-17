@@ -1,4 +1,5 @@
-import { Controller, Post, Param, UseGuards, Req, Put, Body, Get, HttpException, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Post, Param, UseGuards, Req, Put, Body, Get, HttpException, HttpStatus, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { TransactionService } from './transaction.service';
 import { PaymentStatus, Transaction } from './entities/transaction.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -43,6 +44,7 @@ export class TransactionController {
       
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('getAll')
   async getAllTransaction(
     @Query('page') page: number,
@@ -79,7 +81,8 @@ export class TransactionController {
     };
   }
 
-  @Get('getById/:id')
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/getById')
   async getByIdTransaction(@Param('id') id: string){
     try {
       return await this.transactionService.getByIdTransaction(id);
@@ -106,4 +109,46 @@ export class TransactionController {
       payment_status
     );
   }
-}
+
+  @Post('export')
+  async exportTransactionsToExcel(
+    @Res() res: Response,
+    @Query('page') page: number = 1,
+    @Query('page_size') page_size: number = 100,
+    @Query('name_order') name_order?: string,
+    @Query('method_name') method_name?: string,
+    @Query('start_date') start_date?: string,
+    @Query('end_date') end_date?: string,
+  ) {
+    try {
+      // Pastikan start_date dan end_date jika ada dikonversi menjadi format yang benar
+      if (start_date) {
+        start_date = new Date(start_date).toISOString();
+      }
+      if (end_date) {
+        end_date = new Date(end_date).toISOString();
+      }
+
+      // Memanggil service untuk mendapatkan file path
+      const filePath = await this.transactionService.exportTransactionsToExcel(
+        page,
+        page_size,
+        name_order,
+        method_name,
+        start_date,
+        end_date,
+      );
+
+      // Mengirim file ke client sebagai download
+      res.download(filePath, 'transactions_report.xlsx', (err) => {
+        if (err) {
+          console.error('Error while downloading file:', err);
+          res.status(500).send('Failed to download file');
+        }
+      });
+    } catch (error) {
+      console.error('Error exporting transactions:', error);
+      res.status(500).send('Failed to export transactions');
+    }
+  }
+} 

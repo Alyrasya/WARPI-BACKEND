@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, UseGuards, HttpStatus, HttpException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, HttpStatus, HttpException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { PaymentStatus, Transaction } from '#/transaction/entities/transaction.entity';
@@ -7,8 +7,7 @@ import { User } from '#/user/entities/user.entity';
 import { Order } from '#/order/entities/order.entity';
 import { PaymentMethod } from '#/payment_method/entities/payment_method.entity';
 import { Role } from '#/role/entities/role.entity';
-import { query } from 'express';
-
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class TransactionService {
@@ -41,7 +40,7 @@ export class TransactionService {
       const result = await this.transactionRepository
         .createQueryBuilder('transaction')
         .select('SUM(transaction.total_price_transaction)', 'total')
-        .where('transaction.payment_status = :status', { status: 'paid' })
+        .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
         .andWhere('EXTRACT(MONTH FROM transaction.created_at) = :month', { month: currentMonth })
         .andWhere('EXTRACT(YEAR FROM transaction.created_at) = :year', { year: currentYear })
         .getRawOne();
@@ -57,7 +56,7 @@ export class TransactionService {
       const result = await this.transactionRepository
         .createQueryBuilder('transaction')
         .select('SUM(transaction.total_price_transaction)', 'total')
-        .where('transaction.payment_status = :status', { status: 'paid' })
+        .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
         .getRawOne();
 
       return result?.total ? parseFloat(result.total) : 0;
@@ -66,6 +65,7 @@ export class TransactionService {
     }
   }
 
+  //Customer
   async createTransaction(id_user: string, username: string) {
     const user = await this.userRepository.findOne({
         where: { id: id_user },
@@ -155,6 +155,7 @@ export class TransactionService {
     return response;
   }
 
+  //Cashier
   async editTransaction(
     id_transaction: string,
     id_user: string,
@@ -216,6 +217,7 @@ export class TransactionService {
     return { transaction: updatedTransaction };
   }
 
+  //Customer
   async getAllHistory(){
     return await this.transactionRepository.find({
       relations: ['paymentMethod', 'cart', 'cart.user', 'cashier', 'customer'],
@@ -223,6 +225,7 @@ export class TransactionService {
     });
   }
 
+  //Admin
   async getAllTransaction(
     page: number,
     page_size: number,
@@ -282,6 +285,7 @@ export class TransactionService {
     };
   }  
   
+  //Admin
   async getByIdTransaction(id: string){
     try {
       const transaction = await this.transactionRepository
@@ -317,6 +321,7 @@ export class TransactionService {
     }
   }
 
+  //Cashier
   async getAllTransactionCashier(
     page: number,
     page_size: number,
@@ -356,5 +361,57 @@ export class TransactionService {
       totalCount,
     };
   }
+
+  async exportTransactionsToExcel(
+    page: number,
+    page_size: number,
+    name_order?: string,
+    method_name?: string,
+    start_date?: string,
+    end_date?: string,
+  ) {
+    // Ambil data transaksi dari database sesuai parameter
+    const { data: transactions } = await this.getAllTransaction(page, page_size, name_order, method_name, start_date, end_date);
+  
+    // Membuat workbook dan worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Transactions');
+  
+    // Menambahkan header kolom
+    worksheet.columns = [
+      { header: 'ID Transaction', key: 'id', width: 40 },
+      { header: 'No. Order', key: 'no_order', width: 20 },
+      { header: 'Name Order', key: 'name_order', width: 30 },
+      { header: 'Total Price', key: 'total_price_transaction', width: 20 },
+      { header: 'Cash', key: 'cash', width: 15 },
+      { header: 'Change Money', key: 'change_money', width: 20 },
+      { header: 'Payment Status', key: 'payment_status', width: 20 },
+      { header: 'Method Name', key: 'method_name', width: 20 },
+      { header: 'Created At', key: 'createdAt', width: 25 },
+    ];
+  
+    // Menambahkan data transaksi ke worksheet
+    transactions.forEach(transaction => {
+      worksheet.addRow({
+        id: transaction.id,
+        no_order: transaction.no_order,
+        name_order: transaction.name_order,
+        total_price_transaction: transaction.total_price_transaction,
+        cash: transaction.cash,
+        change_money: transaction.change_money,
+        payment_status: transaction.payment_status,
+        method_name: transaction.paymentMethod.method_name,
+        createdAt: new Date(transaction.createdAt).toLocaleString(),
+      });
+    });
+  
+    // Tentukan path untuk menyimpan file
+    const filePath = 'public/sales_report/transactions_report.xlsx';
     
+    // Menyimpan file Excel
+    await workbook.xlsx.writeFile(filePath);
+  
+    // Mengembalikan path file untuk diunduh
+    return filePath;
+  }  
 }

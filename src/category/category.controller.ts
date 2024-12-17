@@ -13,23 +13,27 @@ import {
   HttpException,
   BadRequestException,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Category } from './entities/category.entity';
 import { join } from 'path';
+import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 
 @Controller('category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post('create')
   @HttpCode(HttpStatus.CREATED)
   async createCategory(@Body() data: CreateCategoryDto) {
     return this.categoryService.createCategory(data);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Put(':id/edit')
   async editCategory(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -57,7 +61,7 @@ export class CategoryController {
   }
 
   @Get('getAll')
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async getAllCategories(
     @Query('page') page: number,
     @Query('page_size') page_size: number,
@@ -82,6 +86,7 @@ export class CategoryController {
   }
 
   @Get(':id/detail')
+  @UseGuards(JwtAuthGuard)
   async getProductsByCategory(
     @Param('id') id: string,
     @Query('page') page: number,

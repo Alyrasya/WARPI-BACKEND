@@ -12,6 +12,7 @@ import {
   HttpStatus,
   HttpException,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
@@ -19,6 +20,7 @@ import { CreateCashierDto } from './dto/create-cashier.dto';
 import { User } from './entities/user.entity';
 import { UpdatePasswordUserDto } from './dto/update-password-user.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 
 @Controller('user')
 export class UserController {
@@ -31,12 +33,14 @@ export class UserController {
   }
 
   @Post('create/cashier')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   async createCashier(@Body() createCashierDto: CreateCashierDto) {
     return this.userService.createCashier(createCashierDto);
   }
 
   @Get('getAll')
+  @UseGuards(JwtAuthGuard)
   async getAllCashiers(
     @Query('page') page: number,
     @Query('page_size') page_size: number,
@@ -96,6 +100,7 @@ export class UserController {
   }
 
   @Put(':id/reset-password')
+  @UseGuards(JwtAuthGuard)
   async resetPassword(@Param('id', ParseUUIDPipe) id: string) {
     try {
       const result = await this.userService.resetPassword(id);
@@ -122,6 +127,7 @@ export class UserController {
   }
 
   @Put(':id/status')
+  @UseGuards(JwtAuthGuard)
   async editStatusCashier(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateStatusDto: UpdateStatusDto,
