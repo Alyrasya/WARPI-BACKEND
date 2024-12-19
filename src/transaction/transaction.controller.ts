@@ -110,45 +110,29 @@ export class TransactionController {
     );
   }
 
-  @Post('export')
-  async exportTransactionsToExcel(
-    @Res() res: Response,
-    @Query('page') page: number = 1,
-    @Query('page_size') page_size: number = 100,
-    @Query('name_order') name_order?: string,
-    @Query('method_name') method_name?: string,
-    @Query('start_date') start_date?: string,
-    @Query('end_date') end_date?: string,
-  ) {
-    try {
-      // Pastikan start_date dan end_date jika ada dikonversi menjadi format yang benar
-      if (start_date) {
-        start_date = new Date(start_date).toISOString();
-      }
-      if (end_date) {
-        end_date = new Date(end_date).toISOString();
-      }
-
-      // Memanggil service untuk mendapatkan file path
-      const filePath = await this.transactionService.exportTransactionsToExcel(
-        page,
-        page_size,
-        name_order,
-        method_name,
-        start_date,
-        end_date,
-      );
-
-      // Mengirim file ke client sebagai download
-      res.download(filePath, 'transactions_report.xlsx', (err) => {
-        if (err) {
-          console.error('Error while downloading file:', err);
-          res.status(500).send('Failed to download file');
-        }
-      });
-    } catch (error) {
-      console.error('Error exporting transactions:', error);
-      res.status(500).send('Failed to export transactions');
-    }
-  }
-} 
+  // @Get('export')
+  // async exportTransactions(
+  //   @Query('page') page: number,
+  //   @Query('page_size') page_size: number,
+  //   @Query('name_order') name_order?: string,
+  //   @Query('method_name') method_name?: string,
+  //   @Query('start_date') start_date?: string,
+  //   @Query('end_date') end_date?: string,
+  //   @Res() res?: Response,
+  // ) {
+  //   try {
+  //     await this.transactionService.exportTransactionsToExcel(
+  //       Number(page),
+  //       Number(page_size),
+  //       name_order,
+  //       method_name,
+  //       start_date,
+  //       end_date,
+  //       res,
+  //     );
+  //   } catch (error) {
+  //     console.error('Error exporting transactions:', error.message);
+  //     res.status(500).send('Failed to export transactions');
+  //   }
+  // }
+}

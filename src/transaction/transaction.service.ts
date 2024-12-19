@@ -7,6 +7,8 @@ import { User } from '#/user/entities/user.entity';
 import { Order } from '#/order/entities/order.entity';
 import { PaymentMethod } from '#/payment_method/entities/payment_method.entity';
 import { Role } from '#/role/entities/role.entity';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as ExcelJS from 'exceljs';
 
 @Injectable()
@@ -362,56 +364,82 @@ export class TransactionService {
     };
   }
 
-  async exportTransactionsToExcel(
-    page: number,
-    page_size: number,
-    name_order?: string,
-    method_name?: string,
-    start_date?: string,
-    end_date?: string,
-  ) {
-    // Ambil data transaksi dari database sesuai parameter
-    const { data: transactions } = await this.getAllTransaction(page, page_size, name_order, method_name, start_date, end_date);
+  // async exportTransactionsToExcel(
+  //   page: number,
+  //   page_size: number,
+  //   name_order?: string,
+  //   method_name?: string,
+  //   start_date?: string,
+  //   end_date?: string,
+  //   res?: any,
+  // ) {
+  //   // Validasi parameter query
+  //   if (!page || page < 1 || !page_size || page_size < 1) {
+  //     throw new BadRequestException('Page and page_size must be greater than 0');
+  //   }
   
-    // Membuat workbook dan worksheet
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Transactions');
+  //   // Ambil data transaksi dari database sesuai parameter
+  //   const { data: transactions } = await this.getAllTransaction(
+  //     page,
+  //     page_size,
+  //     name_order,
+  //     method_name,
+  //     start_date,
+  //     end_date,
+  //   );
   
-    // Menambahkan header kolom
-    worksheet.columns = [
-      { header: 'ID Transaction', key: 'id', width: 40 },
-      { header: 'No. Order', key: 'no_order', width: 20 },
-      { header: 'Name Order', key: 'name_order', width: 30 },
-      { header: 'Total Price', key: 'total_price_transaction', width: 20 },
-      { header: 'Cash', key: 'cash', width: 15 },
-      { header: 'Change Money', key: 'change_money', width: 20 },
-      { header: 'Payment Status', key: 'payment_status', width: 20 },
-      { header: 'Method Name', key: 'method_name', width: 20 },
-      { header: 'Created At', key: 'createdAt', width: 25 },
-    ];
+  //   // Membuat workbook dan worksheet
+  //   const workbook = new ExcelJS.Workbook();
+  //   const worksheet = workbook.addWorksheet('Transactions');
   
-    // Menambahkan data transaksi ke worksheet
-    transactions.forEach(transaction => {
-      worksheet.addRow({
-        id: transaction.id,
-        no_order: transaction.no_order,
-        name_order: transaction.name_order,
-        total_price_transaction: transaction.total_price_transaction,
-        cash: transaction.cash,
-        change_money: transaction.change_money,
-        payment_status: transaction.payment_status,
-        method_name: transaction.paymentMethod.method_name,
-        createdAt: new Date(transaction.createdAt).toLocaleString(),
-      });
-    });
+  //   // Menambahkan header kolom
+  //   worksheet.columns = [
+  //     { header: 'ID Transaction', key: 'id', width: 40 },
+  //     { header: 'No. Order', key: 'no_order', width: 20 },
+  //     { header: 'Name Order', key: 'name_order', width: 30 },
+  //     { header: 'Total Price', key: 'total_price_transaction', width: 20 },
+  //     { header: 'Cash', key: 'cash', width: 15 },
+  //     { header: 'Change Money', key: 'change_money', width: 20 },
+  //     { header: 'Payment Status', key: 'payment_status', width: 20 },
+  //     { header: 'Method Name', key: 'method_name', width: 20 },
+  //     { header: 'Created At', key: 'createdAt', width: 25 },
+  //   ];
   
-    // Tentukan path untuk menyimpan file
-    const filePath = 'public/sales_report/transactions_report.xlsx';
-    
-    // Menyimpan file Excel
-    await workbook.xlsx.writeFile(filePath);
+  //   // Menambahkan data transaksi ke worksheet
+  //   transactions.forEach(transaction => {
+  //     worksheet.addRow({
+  //       id: transaction.id,
+  //       no_order: transaction.no_order,
+  //       name_order: transaction.name_order,
+  //       total_price_transaction: transaction.total_price_transaction,
+  //       cash: transaction.cash,
+  //       change_money: transaction.change_money,
+  //       payment_status: transaction.payment_status,
+  //       method_name: transaction.paymentMethod?.method_name,
+  //       createdAt: new Date(transaction.createdAt).toLocaleString(),
+  //     });
+  //   });
   
-    // Mengembalikan path file untuk diunduh
-    return filePath;
-  }  
+  //   // Tentukan path penyimpanan file
+  //   const dirPath = path.join(process.cwd(), 'public', 'sales_report');
+  //   const filePath = path.join(dirPath, 'transactions_report.xlsx');
+  
+  //   // Pastikan folder tujuan ada
+  //   if (!fs.existsSync(dirPath)) {
+  //     fs.mkdirSync(dirPath, { recursive: true });
+  //   }
+  
+  //   // Menyimpan file ke disk
+  //   await workbook.xlsx.writeFile(filePath);
+  
+  //   // Menyediakan file untuk diunduh
+  //   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  //   res.setHeader('Content-Disposition', 'attachment; filename="transactions_report.xlsx"');
+  //   return res.download(filePath, err => {
+  //     if (err) {
+  //       console.error('Error while downloading file:', err);
+  //       res.status(500).send('Failed to download file');
+  //     }
+  //   });
+  // }  
 }
