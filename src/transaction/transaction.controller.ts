@@ -79,12 +79,13 @@ export class TransactionController {
       data: transactions,
     };
   }
-  @Get ('transaction/:id_user')
-  async getAllTransactionByUserAndStatus(
-    @Param ('id_user')id_user:string,
-  ): Promise<Transaction[]>{
-    return this.transactionService.getAllTransactionsByUserAndStatus(id_user);
-  }
+  
+  // @Get ('transaction/:id_user')
+  // async getAllTransactionByUserAndStatus(
+  //   @Param ('id_user')id_user:string,
+  // ): Promise<Transaction[]>{
+  //   return this.transactionService.getAllTransactionsByUserAndStatus(id_user);
+  // }
 
   @Get('getById/:id')
   async getByIdTransaction(@Param('id') id: string){

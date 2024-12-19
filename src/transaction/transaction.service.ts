@@ -30,12 +30,14 @@ export class TransactionService {
     private readonly paymentMethodRepository: Repository<PaymentMethod>,
   ) {}
 
+  //Admin
   async countPaidTransactions(){
     return await this.transactionRepository.count({
       where: { payment_status: 'paid' },
     });
   }
 
+  //Admin
   async countTotalMonthlyIncome(){
     try {
       const currentDate = new Date();
@@ -55,17 +57,20 @@ export class TransactionService {
       throw new BadRequestException('Error calculating monthly income');
     }
   }
-  async getAllTransactionsByUserAndStatus(
-    id_user: string,
-  ): Promise<Transaction[]> {
-    return await this.transactionRepository.find({
-      where: [
-        { customer: { id: id_user } },
-      ],
-      relations: ['paymentMethod', 'cart', 'customer'],
-      order: { createdAt: 'DESC' }, // Mengurutkan berdasarkan tanggal transaksi terbaru
-    });
-  }
+
+  // async getAllTransactionsByUserAndStatus(
+  //   id_user: string,
+  // ): Promise<Transaction[]> {
+  //   return await this.transactionRepository.find({
+  //     where: [
+  //       { customer: { id: id_user } },
+  //     ],
+  //     relations: ['paymentMethod', 'cart', 'customer'],
+  //     order: { createdAt: 'DESC' }, // Mengurutkan berdasarkan tanggal transaksi terbaru
+  //   });
+  // }
+
+  //Admin
   async getTransactionById(id_transaction: string): Promise<Transaction | null> {
     return await this.transactionRepository.findOne({
       where: { id: id_transaction },
@@ -79,6 +84,7 @@ export class TransactionService {
     });
   }
 
+  //Admin
   async countTotalAllIncome(){
     try {
       const result = await this.transactionRepository
@@ -348,6 +354,7 @@ export class TransactionService {
       );
     }
   }
+
   //Cashier
   async getAllTransactionCashier(
     page: number,
@@ -388,5 +395,4 @@ export class TransactionService {
       totalCount,
     };
   }
-//terbaru
 }
