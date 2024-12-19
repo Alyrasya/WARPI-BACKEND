@@ -1,5 +1,4 @@
-import { Controller, Post, Param, UseGuards, Req, Put, Body, Get, HttpException, HttpStatus, Query, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { Controller, Post, Param, UseGuards, Req, Put, Body, Get, HttpException, HttpStatus, Query } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { PaymentStatus, Transaction } from './entities/transaction.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -80,9 +79,14 @@ export class TransactionController {
       data: transactions,
     };
   }
+  @Get ('transaction/:id_user')
+  async getAllTransactionByUserAndStatus(
+    @Param ('id_user')id_user:string,
+  ): Promise<Transaction[]>{
+    return this.transactionService.getAllTransactionsByUserAndStatus(id_user);
+  }
 
-  @UseGuards(JwtAuthGuard)
-  @Get(':id/getById')
+  @Get('getById/:id')
   async getByIdTransaction(@Param('id') id: string){
     try {
       return await this.transactionService.getByIdTransaction(id);
@@ -109,30 +113,4 @@ export class TransactionController {
       payment_status
     );
   }
-
-  // @Get('export')
-  // async exportTransactions(
-  //   @Query('page') page: number,
-  //   @Query('page_size') page_size: number,
-  //   @Query('name_order') name_order?: string,
-  //   @Query('method_name') method_name?: string,
-  //   @Query('start_date') start_date?: string,
-  //   @Query('end_date') end_date?: string,
-  //   @Res() res?: Response,
-  // ) {
-  //   try {
-  //     await this.transactionService.exportTransactionsToExcel(
-  //       Number(page),
-  //       Number(page_size),
-  //       name_order,
-  //       method_name,
-  //       start_date,
-  //       end_date,
-  //       res,
-  //     );
-  //   } catch (error) {
-  //     console.error('Error exporting transactions:', error.message);
-  //     res.status(500).send('Failed to export transactions');
-  //   }
-  // }
 }

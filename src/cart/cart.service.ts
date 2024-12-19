@@ -18,6 +18,11 @@ export class CartService {
         },
       },
       relations: ['order', 'order.product'],
+      order: {
+        order: {
+          createdAt: 'DESC', // Gunakan 'ASC' untuk urutan menaik
+        },
+      },
     });
   }
 }
