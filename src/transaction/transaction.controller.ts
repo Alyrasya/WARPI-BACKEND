@@ -132,18 +132,18 @@ export class TransactionController {
   //   };
   // }
 
-  @Get('getById/:id')
-  async getByIdTransaction(@Param('id') id: string){
-    try {
-      return await this.transactionService.getByIdTransaction(id);
-    } catch (error) {
-      console.error('Kesalahan saat mengambil data transaksi:', error.message);
-      throw new HttpException(
-        'Terjadi kesalahan saat mengambil data transaksi.',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    @Get('getById/:id')
+    async getByIdTransaction(@Param('id') id: string){
+      try {
+        return await this.transactionService.getByIdTransaction(id);
+      } catch (error) {
+        console.error('Kesalahan saat mengambil data transaksi:', error.message);
+        throw new HttpException(
+          'Terjadi kesalahan saat mengambil data transaksi.',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
     }
-  }
 
   @Get('getAllTransactionCashier')
   async getAllTransactionCashier(
