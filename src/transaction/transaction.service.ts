@@ -345,18 +345,6 @@ export class TransactionService {
       );
     }
   }
-  // async getAllTransactionsByUserAndStatus(
-  //   id_user: string,
-  // ): Promise<Transaction[]> {
-  //   return await this.transactionRepository.find({
-  //     where: [
-  //       { customer: { id: id_user } },
-  //       { cashier: { id: id_user } },
-  //     ],
-  //     relations: ['paymentMethod', 'cart', 'cashier', 'customer'],
-  //     order: { createdAt: 'DESC' }, // Mengurutkan berdasarkan tanggal transaksi terbaru
-  //   });
-  // }
   //Cashier
   async getAllTransactionCashier(
     page: number,
@@ -397,4 +385,5 @@ export class TransactionService {
       totalCount,
     };
   }
+//terbaru
 }
