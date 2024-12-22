@@ -22,11 +22,11 @@ export class OrderService {
       where: { id: id_user },
       relations: ['cart'],
     });
-
+  
     if (!user) {
       throw new NotFoundException('User tidak ditemukan');
     }
-
+  
     if (user.role !== Role.Customer) {
       throw new BadRequestException('Hanya pengguna dengan peran Customer yang dapat menambahkan produk ke keranjang');
     }
@@ -61,7 +61,7 @@ export class OrderService {
       if (existingOrder) {
         // Jika produk sudah ada, tambahkan qty dan kurangi stok
         existingOrder.qty += 1;
-        existingOrder.total_price_order = existingOrder.qty * product.price;
+        existingOrder.total_price_order = Number(existingOrder.qty * product.price); // Pastikan ini number
         await this.orderRepository.save(existingOrder);
   
         // Kurangi stok produk
@@ -86,7 +86,7 @@ export class OrderService {
           cart,
           product,
           qty: 1,
-          total_price_order: product.price,
+          total_price_order: Number(product.price), // Pastikan ini number
         });
   
         const savedOrder = await this.orderRepository.save(newOrder);
@@ -113,7 +113,7 @@ export class OrderService {
     return {
       data: orders,
     };
-  }  
+  }    
 
   async editOrderQuantity(
     id_order: string,

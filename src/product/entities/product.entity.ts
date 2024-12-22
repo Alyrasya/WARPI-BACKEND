@@ -69,4 +69,5 @@ export class Product {
     @OneToMany(() => Order, order => order.product)
     order: Order[];
   name: any;
+  static product_name: any;
 }

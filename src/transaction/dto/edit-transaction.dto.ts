@@ -10,6 +10,6 @@ export class EditTransactionDto {
     action: 'paid' | 'pending';
 
     @IsUUID()
-    @IsNotEmpty()
+    @IsOptional()
     id_method: string;  // id_method should be passed in the body
 }

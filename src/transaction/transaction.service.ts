@@ -7,7 +7,19 @@ import { User } from '#/user/entities/user.entity';
 import { Order } from '#/order/entities/order.entity';
 import { PaymentMethod } from '#/payment_method/entities/payment_method.entity';
 import { Role } from '#/role/entities/role.entity';
-import { query } from 'express';
+
+export interface dataTransaction{
+  id: number;
+  noOrder: string;
+  nameOrder: string;
+  totalPriceTransaction: number;
+  cash: number;
+  changeMoney: number;
+  paymentStatus: PaymentStatus; // Assuming PaymentStatus is defined elsewhere
+  paymentMethod: string; // Assuming method_name from paymentMethod is used here
+  createdAt: Date; // Or string depending on your data format
+
+}
 
 
 @Injectable()
@@ -43,6 +55,7 @@ export class TransactionService {
       where: { payment_status: 'pending' },
     });
   }
+  
   async countTotalIncomeByCashier(idUser: string) {
     try {
       const result = await this.transactionRepository
@@ -59,7 +72,6 @@ export class TransactionService {
     }
   }
   
-
   async countTotalMonthlyIncome(){
     try {
       const currentDate = new Date();
@@ -188,62 +200,83 @@ export class TransactionService {
     id_user: string,
     cash: number | null,
     action: 'paid' | 'pending',
-    id_method: string,
-) {
+    id_method: string | null,  // Allow id_method to be null
+  ) {
     const transaction = await this.transactionRepository.findOne({
-        where: { id: id_transaction },
-        relations: ['paymentMethod', 'cashier', 'cart.user'],
+      where: { id: id_transaction },
+      relations: ['paymentMethod', 'cashier', 'cart.user'],
     });
-
+  
     if (!transaction) {
-        throw new NotFoundException('Transaction not found');
+      throw new NotFoundException('Transaction not found');
     }
-
+  
     const cashier = await this.userRepository.findOne({ where: { id: id_user } });
     if (!cashier || cashier.role !== Role.Cashier) {
-        throw new NotFoundException('Cashier not found or unauthorized');
+      throw new NotFoundException('Cashier not found or unauthorized');
     }
-
+  
     transaction.cashier = cashier;
-
-    const paymentMethod = await this.paymentMethodRepository.findOne({ where: { id: id_method } });
-    if (!paymentMethod) {
-        throw new NotFoundException('Payment method not found');
+  
+    // Only validate payment method if status is 'paid' or if 'id_method' is provided
+    if (action === 'paid') {
+      if (id_method !== null) {
+        const paymentMethod = await this.paymentMethodRepository.findOne({ where: { id: id_method } });
+        if (!paymentMethod) {
+          throw new NotFoundException('Payment method not found');
+        }
+        transaction.paymentMethod = paymentMethod;
+      } else {
+        throw new Error('Payment method must be provided for paid transactions');
+      }
+    } else if (id_method !== null) {
+      // If status is pending, we can allow id_method to be null
+      const defaultPaymentMethod = await this.paymentMethodRepository.findOne({ where: { method_name: 'cash' } });
+      if (!defaultPaymentMethod) {
+        throw new NotFoundException('Default payment method not found');
+      }
+      transaction.paymentMethod = defaultPaymentMethod;
     }
-
-    transaction.paymentMethod = paymentMethod;
-
+  
     const cart = transaction.cart;
     if (cart) {
-        const customer = cart.user;
-        if (customer) {
-            transaction.customer = customer;
-        }
+      const customer = cart.user;
+      if (customer) {
+        transaction.customer = customer;
+      }
     }
-
-    if (paymentMethod.method_name === 'cash') {
+  
+    if (action === 'paid') {
+      if (transaction.paymentMethod.method_name === 'cash') {
         if (cash === null) {
-            throw new Error('Cash value must be provided for cash transactions');
+          throw new Error('Cash value must be provided for cash transactions');
         }
         if (cash < (transaction.total_price_transaction ?? 0)) {
-            throw new Error('Cash amount must be equal to or greater than the total price of the transaction');
+          throw new Error('Cash amount must be equal to or greater than the total price of the transaction');
         }
         transaction.cash = cash;
         transaction.change_money = parseFloat((cash - (transaction.total_price_transaction ?? 0)).toFixed(2));
-    } else if (paymentMethod.method_name === 'qris') {
+      } else if (transaction.paymentMethod.method_name === 'qris') {
         transaction.cash = transaction.total_price_transaction ?? 0;
         transaction.change_money = 0;
-    } else {
+      } else {
         throw new Error('Unsupported payment method');
+      }
+    } else if (action === 'pending') {
+      // If status is 'pending', cash and payment method can be null
+      transaction.cash = null;
+      transaction.change_money = 0;
+      transaction.paymentMethod = null;
     }
-
+  
     transaction.payment_status = action === 'paid' ? PaymentStatus.Paid : PaymentStatus.Pending;
-
+  
     const updatedTransaction = await this.transactionRepository.save(transaction);
-
+  
     return { transaction: updatedTransaction };
   }
-
+  
+  
   async getAllHistory(){
     return await this.transactionRepository.find({
       relations: ['paymentMethod', 'cart', 'cart.user', 'cashier', 'customer'],
@@ -254,8 +287,7 @@ export class TransactionService {
   async getAllTransaction(
     page: number,
     page_size: number,
-    no_order?: any,
-    name_order?: any,
+    name_order?: string,
     method_name?: string,
     start_date?: string,
     end_date?: string,
@@ -276,22 +308,29 @@ export class TransactionService {
       .innerJoin('transaction.paymentMethod', 'paymentMethod')
       .where('transaction.payment_status = :payment_status', { payment_status: 'paid' })
   
-    if (no_order) {
-      query.andWhere('transaction.no_order = :no_order', { no_order });
-    }
     if (name_order) {
       query.andWhere('transaction.name_order LIKE :name_order', { name_order: `%${name_order}%` });
     }
     if (method_name) {
       query.andWhere('paymentMethod.method_name = :method_name', { method_name });
     }
-    if (start_date) {
-      query.andWhere('transaction.createdAt >= :start_date', { start_date });
+
+    if (start_date && end_date) {
+      const formattedStartDate = new Date(start_date).toISOString().split('T')[0] + 'T00:00:00.000+07';
+      const formattedEndDate = new Date(end_date).toISOString().split('T')[0] + 'T23:59:59.999+07';
+    
+      console.log(`Start Date: ${formattedStartDate}, End Date: ${formattedEndDate}`);
+      
+      query.andWhere(
+        `transaction.createdAt AT TIME ZONE 'Asia/Jakarta' >= :start_date 
+        AND transaction.createdAt AT TIME ZONE 'Asia/Jakarta' <= :end_date`,
+        {
+          start_date: formattedStartDate,
+          end_date: formattedEndDate,
+        }
+      );
     }
-    if (end_date) {
-      query.andWhere('transaction.createdAt <= :end_date', { end_date });
-    }
-  
+    
     query.orderBy('transaction.createdAt', 'ASC');
 
     query.skip((page - 1) * page_size).take(page_size);
@@ -303,59 +342,6 @@ export class TransactionService {
       totalCount,
     };
   }  
-  
-  async getAllTransactioncashier(
-    page: number,
-    page_size: number,
-    no_order?: number,
-    name_order?: string,
-    payment_status?: PaymentStatus,
-  ) {
-    const query = this.transactionRepository
-      .createQueryBuilder('transaction')
-      .select([
-        'transaction.id',
-        'transaction.no_order',
-        'transaction.name_order',
-        'transaction.total_price_transaction',
-        'transaction.cash',
-        'transaction.change_money',
-        'transaction.payment_status',
-        'paymentMethod.method_name',
-        'transaction.createdAt',
-      ])
-      .innerJoin('transaction.paymentMethod', 'paymentMethod');
-  
-    // Pastikan filter berdasarkan status pembayaran diterapkan dengan benar
-    if (payment_status) {
-      query.andWhere('transaction.payment_status = :payment_status', { payment_status });
-    }
-  
-    // Filter berdasarkan nomor order jika diberikan
-    if (no_order !== undefined) {
-      query.andWhere('transaction.no_order = :no_order', { no_order });
-    }
-  
-    // Filter berdasarkan nama order jika diberikan
-    if (name_order !== undefined) {
-      query.andWhere('transaction.name_order LIKE :name_order', { name_order: `%${name_order}%` });
-    }
-  
-    // Urutkan berdasarkan waktu pembuatan
-    query.orderBy('transaction.createdAt', 'ASC');
-  
-    // Pagination
-    query.skip((page - 1) * page_size).take(page_size);
-  
-    // Ambil data transaksi dan total jumlah data
-    const [transactions, totalCount] = await query.getManyAndCount();
-  
-    // Pastikan kita mengembalikan data transaksi dan total count dengan benar
-    return {
-      data: transactions, // Data transaksi
-      totalCount, // Total transaksi
-    };
-  }
   
   async getByIdTransaction(id: string){
     try {
@@ -391,4 +377,75 @@ export class TransactionService {
       );
     }
   }
+
+async getAllTransactionCashier(
+  page: number,
+  page_size: number,
+  name_order?: string,
+  payment_status?: PaymentStatus
+) {
+  const query = this.transactionRepository
+    .createQueryBuilder('transaction')
+    .select([
+      'transaction.id',
+      'transaction.no_order',
+      'transaction.name_order',
+      'transaction.total_price_transaction',
+      'transaction.cash',
+      'transaction.change_money',
+      'transaction.payment_status',
+      'paymentMethod.method_name',
+      'transaction.createdAt',
+      'transaction.updatedAt',
+      'order.qty',
+      'product.id',
+      'product.product_name',
+      'product.price',
+    ])
+    .leftJoin('transaction.paymentMethod', 'paymentMethod')
+    .leftJoinAndSelect('transaction.order', 'order')
+    .leftJoinAndSelect('order.product', 'product')
+    // Filter transaksi yang dibuat atau diperbarui hari ini
+    .where(
+      'DATE(transaction.createdAt) = CURRENT_DATE OR DATE(transaction.updatedAt) = CURRENT_DATE'
+    );
+
+  if (name_order) {
+    query.andWhere('transaction.name_order LIKE :name_order', {
+      name_order: `%${name_order}%`,
+    });
+  }
+
+  if (payment_status) {
+    query.andWhere('transaction.payment_status::text = :payment_status', {
+      payment_status,
+    });
+  }
+
+  query.orderBy('transaction.createdAt', 'ASC');
+  query.skip((page - 1) * page_size).take(page_size);
+
+  const [transactions, totalCount] = await query.getManyAndCount();
+
+  // Format respons agar data produk masuk ke dalam struktur data transaksi
+  const formattedTransactions = transactions.map((transaction) => ({
+    ...transaction,
+    orders: transaction.order.map((order) => ({
+      qty: order.qty,
+      product: {
+        id: order.product.id,
+        name: order.product.product_name,
+        price: order.product.price,
+      },
+    })),
+  }));
+
+  return {
+    data: formattedTransactions,
+    totalCount,
+  };
+}
+
+  
+    
 }

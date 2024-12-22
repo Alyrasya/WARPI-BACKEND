@@ -13,3 +13,4 @@ import { Order } from '#/order/entities/order.entity';
   exports: [ProductService]
 })
 export class ProductModule {}
+  

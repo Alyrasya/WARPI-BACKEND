@@ -21,7 +21,7 @@ export class PaymentMethodController {
 
   // Endpoint untuk menampilkan metode pembayaran berdasarkan id
   @Get(':id/getById')
-  async getMethodById(@Param('id') id: string): Promise<PaymentMethod> {
+  async getMethodById(@Param('id') id: string){
     try {
       return await this.paymentMethodService.getMethodById(id);
     } catch (error) {

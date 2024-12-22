@@ -213,15 +213,7 @@ export class ProductService {
       .orderBy('product.createdAt', 'ASC');
 
     const [products, totalCount] = await query.getManyAndCount();
-
-    // if (totalCount === 0) {
-    //   throw new NotFoundException(
-    //     category_name || product_name
-    //       ? `Produk dengan filter yang diberikan tidak ditemukan`
-    //       : `Produk tidak ditemukan`,
-    //   );
-    // }
-
+    
     return { data: products, totalCount };
   }
 
