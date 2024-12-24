@@ -1,13 +1,15 @@
-import { Body, Controller, Delete, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { OrderService } from './order.service';
 import { EditOrderQuantityDto } from './dto/edit-order';
+import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 
 @Controller('order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-@Post('add/:id_user')
+  @Post('add/:id_user')
+  @UseGuards(JwtAuthGuard)
   async addToCart(
     @Param('id_user') id_user: string,
     @Body() addToCartDto: AddToCartDto,
@@ -16,17 +18,19 @@ export class OrderController {
     return this.orderService.addToCart(id_user, id_product);
   }
 
-    @Put('/edit-quantity/:id_order')
-    async editOrderQuantity(
-      @Param('id_order') id_order: string,
-      @Body() editOrderQuantityDto: EditOrderQuantityDto,
-    ) {
-      const { action, qty } = editOrderQuantityDto;
-    
-      return this.orderService.editOrderQuantity(id_order, action, qty);
-    }
+  @Put('/edit-quantity/:id_order')
+  @UseGuards(JwtAuthGuard)
+  async editOrderQuantity(
+    @Param('id_order') id_order: string,
+    @Body() editOrderQuantityDto: EditOrderQuantityDto,
+  ) {
+    const { action, qty } = editOrderQuantityDto;
+  
+    return this.orderService.editOrderQuantity(id_order, action, qty);
+  }
 
   @Delete('/delete/:id_order')
+  @UseGuards(JwtAuthGuard)
   async deleteOrder(@Param('id_order') id_order: string) {
     return this.orderService.deleteOrder(id_order);
   }

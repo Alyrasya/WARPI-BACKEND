@@ -8,8 +8,9 @@ import { EditTransactionDto } from './dto/edit-transaction.dto';
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
-  @UseGuards(JwtAuthGuard)
+  //Customer
   @Post('create/:id_user')
+  @UseGuards(JwtAuthGuard)
   async createTransaction(
     @Param('id_user') id_user: string,
     @Req() req: any,
@@ -23,6 +24,7 @@ export class TransactionController {
     return await this.transactionService.createTransaction(id_user, username);
   }
 
+  //Customer
   @Put('edit/:id_transaction/:id_user')
   async editTransaction(
       @Param('id_transaction') id_transaction: string,
@@ -43,8 +45,9 @@ export class TransactionController {
       
   }
 
-  @UseGuards(JwtAuthGuard)
+  //Admin
   @Get('getAll')
+  @UseGuards(JwtAuthGuard)
   async getAllTransaction(
     @Query('page') page: number,
     @Query('page_size') page_size: number,
@@ -71,23 +74,9 @@ export class TransactionController {
     }
   }
 
-  @Get('history')
-  async getAllHistory() {
-    const transactions = await this.transactionService.getAllHistory();
-    return {
-      message: 'Transaction history fetched successfully',
-      data: transactions,
-    };
-  }
-  
-  // @Get ('transaction/:id_user')
-  // async getAllTransactionByUserAndStatus(
-  //   @Param ('id_user')id_user:string,
-  // ): Promise<Transaction[]>{
-  //   return this.transactionService.getAllTransactionsByUserAndStatus(id_user);
-  // }
-
+  //Admin
   @Get('getById/:id')
+  @UseGuards(JwtAuthGuard)
   async getByIdTransaction(@Param('id') id: string){
     try {
       return await this.transactionService.getByIdTransaction(id);
@@ -100,6 +89,7 @@ export class TransactionController {
     }
   }
 
+  //Cashier
   @Get('getAllTransactionCashier')
   async getAllTransactionCashier(
     @Query('page') page: number,
@@ -113,5 +103,33 @@ export class TransactionController {
       name_order,
       payment_status
     );
+  }
+
+  //Customer
+  @Get ('getAll/:id_user')
+  @UseGuards(JwtAuthGuard)
+  async getAllTransactionUser(
+    @Param ('id_user')id_user: string,
+  ): Promise<Transaction[]>{
+    return this.transactionService.getAllTransactionsUser(id_user);
+  }
+
+  //Customer
+  @Get('getDetail/:id')
+  @UseGuards(JwtAuthGuard)
+  async getByIdDetail(@Param('id') id: string) {
+    try {
+      const transactionDetail = await this.transactionService.getByIdDetail(id);
+      return {
+        success: true,
+        data: transactionDetail,
+      };
+    } catch (error) {
+      console.error('Kesalahan saat mengambil detail transaksi:', error.message);
+      throw new HttpException(
+        error.response?.message || 'Terjadi kesalahan saat mengambil detail transaksi.',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

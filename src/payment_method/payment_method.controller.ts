@@ -1,6 +1,7 @@
-import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Param, NotFoundException, UseGuards } from '@nestjs/common';
 import { PaymentMethodService } from './payment_method.service';
 import { PaymentMethod } from './entities/payment_method.entity';
+import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 
 @Controller('payment-method')
 export class PaymentMethodController {
@@ -8,25 +9,13 @@ export class PaymentMethodController {
 
   // Endpoint untuk menampilkan seluruh metode pembayaran
   @Get('getAll')
+  @UseGuards(JwtAuthGuard)
   async getAllMethods(): Promise<PaymentMethod[]> {
     try {
       return await this.paymentMethodService.getAllMethods();
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw new NotFoundException('No payment methods found');
-      }
-      throw error;
-    }
-  }
-
-  // Endpoint untuk menampilkan metode pembayaran berdasarkan id
-  @Get(':id/getById')
-  async getMethodById(@Param('id') id: string){
-    try {
-      return await this.paymentMethodService.getMethodById(id);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw new NotFoundException(`Payment method with ID ${id} not found`);
       }
       throw error;
     }
