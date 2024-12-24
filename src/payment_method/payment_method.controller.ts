@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 export class PaymentMethodController {
   constructor(private readonly paymentMethodService: PaymentMethodService) {}
 
-  // Endpoint untuk menampilkan seluruh metode pembayaran
+  //Cashier
   @Get('getAll')
   @UseGuards(JwtAuthGuard)
   async getAllMethods(): Promise<PaymentMethod[]> {

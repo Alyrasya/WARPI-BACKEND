@@ -8,6 +8,7 @@ import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
+  //Customer
   @Post('add/:id_user')
   @UseGuards(JwtAuthGuard)
   async addToCart(
@@ -18,6 +19,7 @@ export class OrderController {
     return this.orderService.addToCart(id_user, id_product);
   }
 
+  //Customer
   @Put('/edit-quantity/:id_order')
   @UseGuards(JwtAuthGuard)
   async editOrderQuantity(
@@ -29,6 +31,7 @@ export class OrderController {
     return this.orderService.editOrderQuantity(id_order, action, qty);
   }
 
+  //Customer
   @Delete('/delete/:id_order')
   @UseGuards(JwtAuthGuard)
   async deleteOrder(@Param('id_order') id_order: string) {

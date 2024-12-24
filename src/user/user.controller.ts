@@ -26,12 +26,14 @@ import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  //Customer
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async createCustomer(@Body() registerCustomerDto: RegisterCustomerDto) {
     return this.userService.register(registerCustomerDto);
   }
 
+  //Admin
   @Post('create/cashier')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
@@ -39,6 +41,7 @@ export class UserController {
     return this.userService.createCashier(createCashierDto);
   }
 
+  //Admin
   @Get('getAll')
   @UseGuards(JwtAuthGuard)
   async getAllCashiers(
@@ -61,6 +64,7 @@ export class UserController {
     }
   }
 
+  //Cashier
   @Put(':id/password')
   async editPassword(
     @Param('id', ParseUUIDPipe) id: string,
@@ -99,6 +103,7 @@ export class UserController {
     }
   }
 
+  //Admin
   @Put(':id/reset-password')
   @UseGuards(JwtAuthGuard)
   async resetPassword(@Param('id', ParseUUIDPipe) id: string) {
@@ -126,6 +131,7 @@ export class UserController {
     }
   }
 
+  //Admin
   @Put(':id/status')
   @UseGuards(JwtAuthGuard)
   async editStatusCashier(

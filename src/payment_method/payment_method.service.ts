@@ -11,7 +11,7 @@ export class PaymentMethodService {
     private readonly paymentMethodRepository: Repository<PaymentMethod>,
   ) {}
 
-  // Fungsi untuk menampilkan seluruh data payment_method
+  //Cashier
   async getAllMethods(): Promise<PaymentMethod[]> {
     const paymentMethods = await this.paymentMethodRepository.find();
 
@@ -20,16 +20,5 @@ export class PaymentMethodService {
     }
 
     return paymentMethods;
-  }
-
-  // Fungsi untuk menampilkan data payment_method berdasarkan id
-  async getMethodById(id: string): Promise<PaymentMethod> {
-    const paymentMethod = await this.paymentMethodRepository.findOne({ where: { id } });
-
-    if (!paymentMethod) {
-      throw new NotFoundException(`Payment method with ID ${id} not found`);
-    }
-
-    return paymentMethod;
   }
 }

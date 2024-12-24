@@ -6,8 +6,9 @@ import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
-  @UseGuards(JwtAuthGuard)
+  //Admin
   @Get('admin-summary')
+  @UseGuards(JwtAuthGuard)
   async getAdminSummary() {
     return this.dashboardService.getAdminSummary();
   }

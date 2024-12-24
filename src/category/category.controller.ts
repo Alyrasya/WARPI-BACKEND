@@ -26,15 +26,17 @@ import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
-  @UseGuards(JwtAuthGuard)
+  //Admin
   @Post('create')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   async createCategory(@Body() data: CreateCategoryDto) {
     return this.categoryService.createCategory(data);
   }
 
-  @UseGuards(JwtAuthGuard)
+  //Admin
   @Put(':id/edit')
+  @UseGuards(JwtAuthGuard)
   async editCategory(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
@@ -60,6 +62,7 @@ export class CategoryController {
     }
   }
 
+  //Admin & Customer
   @Get('getAll')
   @UseGuards(JwtAuthGuard)
   async getAllCategories(
@@ -85,6 +88,7 @@ export class CategoryController {
     }
   }
 
+  //Admin
   @Get(':id/detail')
   @UseGuards(JwtAuthGuard)
   async getProductsByCategory(
@@ -115,6 +119,7 @@ export class CategoryController {
     }
   }
 
+  //Admin & Customer 
   @Get('upload/:image')
   getImage(@Param('image') imagePath: string, @Res() res: any) {
     const filePath = join(process.cwd(), 'src', 'product', 'photo_product', imagePath);

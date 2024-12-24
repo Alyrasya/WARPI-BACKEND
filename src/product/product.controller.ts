@@ -30,6 +30,7 @@ import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
+  //Admin
   @Post('create')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
@@ -82,6 +83,7 @@ export class ProductController {
     }
   }
 
+  //Admin
   @Put(':id/edit')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
@@ -144,6 +146,7 @@ export class ProductController {
     }
   }
 
+  //Customer
   @Get('getAll')
   @UseGuards(JwtAuthGuard)
   async getAllProducts(
@@ -174,6 +177,7 @@ export class ProductController {
     }
   }
 
+  //Admin & Customer
   @Get('/:id/getById')
   @UseGuards(JwtAuthGuard)
   async getByIdProduct(@Param('id', ParseUUIDPipe) id: string) {

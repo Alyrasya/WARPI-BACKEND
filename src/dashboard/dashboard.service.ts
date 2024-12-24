@@ -28,6 +28,7 @@ export class DashboardService {
     private readonly transactionService: TransactionService,
   ) {}
 
+  //Admin
   async getAdminSummary(){
     const totalCategory = await this.categoryService.countCategories();
     const totalProduct = await this.productService.countProducts();
@@ -44,19 +45,4 @@ export class DashboardService {
       totalAllIncome,
     };
   }
-
-  // async getCashierSummary(idUser : string){
-  //   const totalPaidTransaction = await this.transactionService.countPaidTransactions()
-  //   const totalUnpaidTransaction = await this.transactionService.countUnpaidTransactions()
-  //   const totalPendingTransaction = await this.transactionService.countPendingTransactions()
-  //   const totalTransactionCashier = await this.transactionService.countTotalIncomeByCashier(idUser)
-
-  //   return{
-  //     totalPaidTransaction,
-  //     totalUnpaidTransaction,
-  //     totalPendingTransaction,
-  //     totalTransactionCashier
-  //   }
-  // }
-  
 }

@@ -22,7 +22,7 @@ export class ProductService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  // Fungsi untuk membuat product
+  //Admin
   async createProduct(data: CreateProductDto) {
     const category = await this.categoryRepository.findOne({
       where: { id: data.id_category },
@@ -62,7 +62,7 @@ export class ProductService {
     }
   }
 
-  // Fungsi untuk mengedit produk
+  //Admin
   async updateProduct(id: string, data: UpdateProductDto) {
     try {
       const product = await this.getByIdProduct(id);
@@ -147,7 +147,7 @@ export class ProductService {
     }
   }
 
-  // Fungsi untuk melihat detail produk dengan relasi ke category
+  //Admin & Product
   async getByIdProduct(id: string) {
     const product = await this.productRepository.findOne({
       where: { id },
@@ -165,7 +165,7 @@ export class ProductService {
     };
   }
 
-  // Fungsi untuk mendapatkan seluruh produk
+  //Customer
   async getAllProduct(
     page: number,
     page_size: number,
@@ -217,7 +217,7 @@ export class ProductService {
     return { data: products, totalCount };
   }
 
-  //Fungsi untuk menghitung total produk
+  //Admin
   async countProducts() {
     return await this.productRepository.count();
   }

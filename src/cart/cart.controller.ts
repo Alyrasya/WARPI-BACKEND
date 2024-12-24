@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '#/auth/jwt-auth.guard';
   export class CartController {
     constructor(private readonly cartService: CartService) {}
 
+  //Customer
   @UseGuards(JwtAuthGuard)
   @Get('getById/:id_user')
   async getByIdCartUser(@Param('id_user') id_user: string) {

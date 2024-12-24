@@ -439,6 +439,7 @@ export class TransactionService {
     };
   }
 
+  //Customer
   async getByIdDetail(id: string) {
     try {
       const transaction = await this.transactionRepository
@@ -470,7 +471,10 @@ export class TransactionService {
           total_price_transaction: transaction.total_price_transaction,
           payment_status: transaction.payment_status,
           createdAt: transaction.createdAt,
-          products: transaction.order?.map((order) => order.product),
+          products: transaction.order?.map((order) => ({
+            ...order.product,
+            qty: order.qty, // Pastikan order.qty berisi jumlah kuantitas produk
+          })),
         };
       } else if (transaction.payment_status === 'paid') {
         selectedTransaction = {
@@ -483,7 +487,10 @@ export class TransactionService {
           payment_status: transaction.payment_status,
           method_name: transaction.paymentMethod.method_name,
           createdAt: transaction.createdAt,
-          products: transaction.order?.map((order) => order.product),
+          products: transaction.order?.map((order) => ({
+            ...order.product,
+            qty: order.qty, // Pastikan order.qty berisi jumlah kuantitas produk
+          })),
         };
       } else {
         throw new HttpException(

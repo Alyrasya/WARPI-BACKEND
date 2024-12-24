@@ -38,7 +38,7 @@ export class UserService {
     return { salt, hash };
   }
 
-  // Fungsi untuk register Customer
+  //Customer
   async register(data: RegisterCustomerDto) {
     const { username, email, password } = data;
 
@@ -91,7 +91,7 @@ export class UserService {
     }
   }
 
-  // Fungsi untuk membuat Cashier dengan default password
+  //Admin
   async createCashier(data: CreateCashierDto) {
     const { username, email } = data;
 
@@ -136,7 +136,7 @@ export class UserService {
     }
   }
 
-  // Fungsi untuk menampilkan seluruh data user dengan role cashier
+  //Admin
   async getAllCashier(
     page: number,
     page_size: number,
@@ -173,7 +173,7 @@ export class UserService {
     return { data: cashiers, totalCount };
   }
 
-  // Fungsi untuk menghitung total cashier
+  //Admin
   async countCashiers() {
     return await this.userRepository.count({
       where: {
@@ -183,7 +183,7 @@ export class UserService {
     });
   }
 
-  // Fungsi untuk menemukan user berdasarkan ID
+  //Admin
   async getUserById(id: string) {
     const user = await this.userRepository.findOne({
       where: {
@@ -201,7 +201,7 @@ export class UserService {
     return user;
   }
 
-  // Fungsi untuk mengubah password user
+  //Cashier
   async editPassword(
     id: string,
     currentPassword: string,
@@ -259,7 +259,7 @@ export class UserService {
     }
   }
 
-  // Fungsi untuk mereset password user ke default
+  //Admin
   async resetPassword(id: string) {
     try {
       const user = await this.getUserById(id);
@@ -295,7 +295,7 @@ export class UserService {
     }
   }
 
-  // Mendapatkan user berdasarkan email
+  //Auth
   async findUserByEmail(email: string) {
     return this.userRepository.findOne({
       where: { email },
@@ -303,7 +303,7 @@ export class UserService {
     });
   }
 
-  // Fungsi untuk mengubah status_user role cashier
+  //Admin
   async editStatusCashier(id: string, updateStatusDto: UpdateStatusDto) {
     try {
       const { status_user } = updateStatusDto;
@@ -329,6 +329,7 @@ export class UserService {
     }
   }
 
+  //Auth
   async getUserId(id: string) {
     const user = await this.userRepository.findOne({
       where: {

@@ -10,12 +10,13 @@ export class CartService {
     private readonly cartRepository: Repository<Cart>,
   ) {}
     
+  //Customer
   async getByIdCartUser(id_user: string) {
     const cart = await this.cartRepository.findOne({
       where: { user: { id: id_user } },
       relations: [
-        'order',        // Relasi dengan Order
-        'order.product' // Relasi Order dengan Product
+        'order',
+        'order.product'
       ],
     });
 
